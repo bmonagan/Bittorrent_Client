@@ -11,8 +11,7 @@ def generate_peer_id()-> str:
         str: A 20-character string representing the BitTorrent peer ID.
     """
     prefix = '-BK0001-'
-    chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
     length = 12
-    random_choices = random.choices(chars, k=length)
+    random_choices = random.choices('0123456789', k=length)
     suffix = ''.join(random_choices)
     return prefix + suffix
