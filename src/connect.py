@@ -2,8 +2,12 @@
 from urllib.parse import urlencode
 from . import bencoding
 from peer_id_generation import generate_peer_id
+import logging
+import aiohttp
+class TrackerResponse:
+    pass
 class Tracker:
-    
+
     def __init__(self,torrent):
         self.torrent = torrent
         self.peer_id = generate_peer_id()
