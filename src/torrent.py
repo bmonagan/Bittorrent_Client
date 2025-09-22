@@ -1,2 +1,2 @@
-def torrent(*args):
+def Torrent(*args):
     pass

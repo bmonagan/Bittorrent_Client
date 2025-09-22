@@ -1,6 +1,6 @@
 # TODO imports to implement later.
-# from torrent import Torrent
-# from client import TorrentClient
+from torrent import Torrent
+from client import TorrentClient
 
 from concurrent.futures import CancelledError
 
