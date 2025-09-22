@@ -1,0 +1,2 @@
+def torrent(*args):
+    pass
