@@ -7,6 +7,8 @@ def generate_peer_id()-> str:
     The peer ID consists of a fixed prefix '-BK0001-' followed by a 12-character
     random alphanumeric suffix. This format helps identify the client and version.
 
+    Must be exactly 20 bytes. String representations of numbers are 1 byte each.
+
     Returns:
         str: A 20-character string representing the BitTorrent peer ID.
     """
