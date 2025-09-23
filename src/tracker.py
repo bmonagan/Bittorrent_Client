@@ -20,6 +20,51 @@ class TrackerResponse:
         if b'failure reason' in self.response:
             return self.response[b'failure reason'].decode('utf-8')
         return None
+    
+    @property
+    def interval(self) -> int:
+        return self.response.get(b'interval',0)
+    
+    @property
+    def complete(self) -> int:
+        return self.response.get(b'complete',0)
+
+    @property 
+    def incomplete(self) -> int:
+        """
+        Number of leechers.
+        """
+        return self.response.get(b'incomplete',0)
+    
+    @property 
+    def peers(self):
+        """
+        a list of tuples for each peer (ip,port)
+        """
+        peers = self.response[b'peers']
+        if type(peers) == list:
+            #TODO implement support for dictionary peer list 
+            logging.debug('Dictionary model peers are return by tracker')
+            raise NotImplementedError
+        else:
+            logging.debug('Binary model peers are returned by tracker')
+
+            peers = [peers[i:i+6] for i in range(0, len(peers), 6)]
+
+            return [(socket.inet_ntoa(p[:4]), self.decode_port(p[4:]))
+                    for p in peers]
+    
+    def __str__(self):
+        return "incomplete: {incomplete}\n" \
+               "complete: {complete}\n" \
+               "interval: {interval}\n" \
+               "peers: {peers}\n".format(
+                   incomplete=self.incomplete,
+                   complete=self.complete,
+                   interval=self.interval,
+                   peers=", ".join([x for (x, _) in self.peers]))
+
+
 class Tracker:
 
     def __init__(self,torrent):
@@ -68,7 +113,7 @@ class Tracker:
             'compact': 1
         }
     
-    def _decode_port(port):
+    def decode_port(self,port):
         return unpack(">H", port)[0]
     
 
