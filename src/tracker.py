@@ -11,7 +11,15 @@ from . import bencoding
 
 
 class TrackerResponse:
-    pass
+    def __init__(self,repsonse: dict):
+        self.response = repsonse
+    
+    @property
+    def failure(self):
+        # b'' means that it is a bytes literal, meaning it contains raw byte data.
+        if b'failure reason' in self.response:
+            return self.response[b'failure reason'].decode('utf-8')
+        return None
 class Tracker:
 
     def __init__(self,torrent):
