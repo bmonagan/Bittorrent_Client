@@ -3,6 +3,7 @@ import aiohttp
 import random
 import logging
 import socket
+import random
 from struct import unpack
 from urllib.parse import urlencode
 
@@ -15,7 +16,7 @@ class Tracker:
 
     def __init__(self,torrent):
         self.torrent = torrent
-        self.peer_id = generate_peer_id()
+        self.peer_id = self.generate_peer_id()
         self.http_client = aiohttp.ClientSeesion()
 
     async def connect(self,
@@ -42,19 +43,28 @@ class Tracker:
             data = await response.read()
             return TrackerResponse(bencoding.decode(data))
     def close(self):
-        pass
+        self.http_client.close()
     
     def raise_for_error(self,tracker_response):
         pass
     
     def _construct_tracker_parameters(self):
-        pass
+        #TODO update when communicating with tracker.
+        return {
+            'info_hash': self.torrent.info_hash,
+            'peer_id': self.peer_id,
+            'port': 6889,
+            'uploaded': 0,
+            'downloaded': 0,
+            'left': 0,
+            'compact': 1
+        }
     
     def _decode_port(port):
-        pass
-    import random
+        return unpack(">H", port)[0]
+    
 
-    def generate_peer_id()-> str:
+    def generate_peer_id(self)-> str:
         """
         Generates a unique BitTorrent peer ID using the Azureus-style convention.
         Must be exactly 20 bytes. String representations of numbers are 1 byte each.
