@@ -1,9 +1,12 @@
 
-from urllib.parse import urlencode
-from . import bencoding
-from .peer_id import generate_peer_id
-import logging
 import aiohttp
+import random
+import logging
+import socket
+from struct import unpack
+from urllib.parse import urlencode
+
+from . import bencoding
 
 
 class TrackerResponse:
@@ -38,3 +41,14 @@ class Tracker:
                 raise ConnectionError('Unable to connect to tracker')
             data = await response.read()
             return TrackerResponse(bencoding.decode(data))
+    def close(self):
+        pass
+    
+    def raise_for_error(self,tracker_response):
+        pass
+    
+    def _construct_tracker_parameters(self):
+        pass
+    
+    def _decode_port(port):
+        pass
