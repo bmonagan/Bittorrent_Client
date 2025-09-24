@@ -124,7 +124,20 @@ class PeerConnection:
         if not self.future.done():
             self.future.cancel()
 
-                    
+    async def _request_piece(self):
+        block = self.piece_manager.next_request(self.remove_id)
+        if block:
+            message = Request(block.piece, block.offset, block.length).encode()
+
+            logging.debug('Requesting block {block} for piece {piece} '
+                          'of {length} bytes from peer {peer}'.format(
+                              piece=block.piece,
+                              block=block.offset,
+                              length=block.length,
+                              peer=self.remote_id))
+            
+            self.writer.write(message)
+            await self.writer.drain()
                         
 
                 
