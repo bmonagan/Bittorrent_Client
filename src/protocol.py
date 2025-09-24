@@ -330,7 +330,14 @@ class Handshake(PeerMessage):
 
 
 class KeepAlive(PeerMessage):
-    pass
+    """
+    The Keep-Alive message has no payload and length is set to zero.
+
+    Message format:
+        <len=0000>
+    """
+    def __str__(self):
+        return 'KeepAlive'
 
 class BitField(PeerMessage):
     pass
