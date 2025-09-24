@@ -66,6 +66,9 @@ class TrackerResponse:
 
 
 class Tracker:
+    """
+    Connection to a tracker for a given torrent that is either under download or seeding state.
+    """
 
     def __init__(self,torrent):
         self.torrent = torrent
