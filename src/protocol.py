@@ -340,7 +340,40 @@ class KeepAlive(PeerMessage):
         return 'KeepAlive'
 
 class BitField(PeerMessage):
-    pass
+    """
+    The BitField is a message with variable length where the payload is a
+    bit array representing all the bits a peer have (1) or does not have (0).
+
+    Message format:
+        <len=0001+X><id=5><bitfield>
+    """
+
+    def __init__(self,data):
+        self.bitfield = bitstring.BitArray(bytes=data)
+    
+    def encode(self) -> bytes:
+        """
+        Encodes this object instance to the raw bytes representing the entire
+        message (ready to be transmitted).
+        """
+        bits_length = len(self.bitfield)
+        return struct.pack('>Ib' + str(bits_length) + 's',
+                           1 + bits_length,
+                           PeerMessage.BitField,
+                           self.bitfield)
+    @classmethod
+    def decode(cls, data:bytes):
+        message_length = struct.unpack('>I', data[:4])[0]
+        logging.debug('Decoding BitField of length: {length}'.format(
+            length = message_length))
+        
+        parts = struct.unpack('>Ib' + str(message_length - 1) + 's', data)
+        return cls(parts[2])
+    
+    def __str__(self):
+        return 'Bitfield'
+    
+
 
 class Interested(PeerMessage):
     pass
