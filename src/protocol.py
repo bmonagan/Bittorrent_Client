@@ -6,7 +6,6 @@ from concurrent.futures import CancelledError
 
 import bitstring
 
-from . import bencoding
 
 REQUEST_SIZE = 2**14
 
@@ -267,7 +266,68 @@ class PeerMessage:
         pass
 
 class Handshake(PeerMessage):
-    pass
+    """
+    The handshake message is the first message sent and then received from a
+    remote peer.
+
+    The messages is always 68 bytes long (for this version of BitTorrent
+    protocol).
+
+    Message format:
+        <pstrlen><pstr><reserved><info_hash><peer_id>
+
+    In version 1.0 of the BitTorrent protocol:
+        pstrlen = 19
+        pstr = "BitTorrent protocol".
+
+    Thus length is:
+        49 + len(pstr) = 68 bytes long.
+    """
+    length = 49 + 19
+    
+    def __init__(self,info_hash:bytes, peer_id:bytes):
+        """
+        Construct the handshake message
+
+        :param info_hash: The SHA1 hash for the info dict
+        :param peer_id: The unique peer id
+        """
+        if isinstance(info_hash,str):
+            info_hash = info_hash.encode('utf-8')
+        if isinstance(peer_id,str):
+            peer_id = peer_id.encode('utf-8')
+        self.info_hash = info_hash
+        self.peer_id = peer_id
+    
+    def encode(self) -> bytes:
+        """
+        Encodes this object instance to the raw bytes representing the entire
+        message (ready to be transmitted).
+        """
+        return struct.pack(
+            '>B19s8x20s20s',
+            19,                         # Single byte (B)
+            b'BitTorrent protocol',     # String 19s
+                                        # Reserved 8x (pad byte, no value)
+            self.info_hash,             # String 20s
+            self.peer_id)               # String 20s
+
+    @classmethod
+    def decode(cls,data: bytes):
+        """
+        Decodes the given BitTorrent message into a handshake message, if not
+        a valid message, None is returned.
+        """
+        logging.debug('Decoding Handshake of Length: {length}'.format(
+            length = len(data)))
+        if len(data) < (49 + 19):
+            return None
+        parts = struct.unpack('>B19s8x20s20s', data)
+        return cls(info_hash=parts[2], peer_id=parts[3])
+
+    def __str__(self):
+        return 'Handshake' 
+
 
 class KeepAlive(PeerMessage):
     pass
