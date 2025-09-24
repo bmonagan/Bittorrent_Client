@@ -399,7 +399,18 @@ class Interested(PeerMessage):
         
 
 class NotInterested(PeerMessage):
-    pass
+    """
+    The not interested message is fix length and has no payload other than the
+    message identifier. It is used to notify each other that there is no
+    interest to download pieces.
+
+    Message format:
+        <len=0001><id=3>
+    """
+     
+    def __str__(self):
+        return 'NotInterested'
+    
 
 class Choke(PeerMessage):
     pass
