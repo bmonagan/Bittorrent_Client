@@ -6,6 +6,8 @@ from concurrent.futures import CancelledError
 
 import bitstring
 
+from . import bencoding
+
 REQUEST_SIZE = 2**14
 
 class ProtocolError(BaseException):
@@ -125,7 +127,7 @@ class PeerConnection:
             self.future.cancel()
 
     async def _request_piece(self):
-        block = self.piece_manager.next_request(self.remove_id)
+        block = self.piece_manager.next_request(self.remote_id)
         if block:
             message = Request(block.piece, block.offset, block.length).encode()
 
@@ -139,6 +141,34 @@ class PeerConnection:
             self.writer.write(message)
             await self.writer.drain()
                         
+    async def _handshake(self):
+        """
+        Sends the initial handshake to the remote peer and wait for
+        the peer to respond with its handshake
+        """
+        self.writer.write(HandShake(self.info_hash,self.peer_id).encode())
+        await self.writer.drait()
+
+        buf = b""
+        tries = 1 
+        while len(buf) < Handshake.length and tries < 10:
+            tries += 1 
+            buf = await self.reader.read(PeerStreamIterator.CHUNK_SIZE)
+        
+        response = Handshake.decode(buf[:Handshake.length])
+        if not response:
+            raise ProtocolError('Unable to recieve and parse a handshake')
+        if not response.info_hash == self.info_hash:
+            raise ProtocolError('Handshake with invalid info_hash')
+        
+        #TODO: Validate that the peer_id received from the peer matches tracker
+        self.remote_id = response.peer_id
+        logging.info('Handshake with peer was successful')
+
+        return buf[Handshake.length:]
+
+
+
 
                 
 
@@ -149,7 +179,7 @@ class PeerStreamIterator:
 class PeerMessage:
     pass
 
-class HandShake(PeerMessage):
+class Handshake(PeerMessage):
     pass
 
 class KeepAlive(PeerMessage):
