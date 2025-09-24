@@ -84,10 +84,7 @@ class Torrent:
             return self.meta_info[b'info'][b'name'].decode('utf-8')
         
         def __str__(self):
-            return 'Filename: {0}\n' \
-                'File length: {1}\n' \
-                'Announce URL: {2}\n' \
-                'Hash: {3}'.format(self.meta_info[b'info'][b'name'],
-                                    self.meta_info[b'info'][b'length'],
-                                    self.meta_info[b'announce'],
-                                    self.info_hash)
+            return (f"Filename: {self.meta_info[b'info'][b'name'].decode('utf-8')}\n"
+                    f"File length: {self.meta_info[b'info'][b'length']}\n"
+                    f"Announce URL: {self.meta_info[b'announce'].decode('utf-8')}\n"
+                    f"Hash: {self.info_hash.hex()}")
