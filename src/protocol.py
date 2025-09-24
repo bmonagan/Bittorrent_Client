@@ -114,6 +114,15 @@ class PeerConnection:
             self.writer.close()
 
         self.queue.task_done()
+    
+    def stop(self):
+        """
+        Stops this connection from the current peer and stops 
+        new connections
+        """
+        self.my_state.append('stopped')
+        if not self.future.done():
+            self.future.cancel()
 
                     
                         
