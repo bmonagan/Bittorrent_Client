@@ -213,12 +213,58 @@ class PeerStreamIterator:
                 raise e 
             except Exception:
                 logging.exception('Error when iterating over stream!')
-        raise StopAsyncIteration()          
+        raise StopAsyncIteration()  
 
 
 
 class PeerMessage:
-    pass
+    """
+    A message between two peers.
+
+    All of the remaining messages in the protocol take the form of:
+        <length prefix><message ID><payload>
+
+    - The length prefix is a four byte big-endian value.
+    - The message ID is a single decimal byte.
+    - The payload is message dependent.
+
+    NOTE: The Handshake messageis different in layout compared to the other
+          messages.
+
+    Read more:
+        https://wiki.theory.org/BitTorrentSpecification#Messages
+
+    BitTorrent uses Big-Endian (Network Byte Order) for all messages, this is
+    declared as the first character being '>' in all pack / unpack calls to the
+    Python's `struct` module.
+    """
+    Choke = 0
+    Unchoke = 1
+    Interested = 2
+    NotInterested = 3
+    Have = 4
+    BitField = 5
+    Request = 6
+    Piece = 7
+    Cancel = 8
+    Port = 9
+    Handshake = None  # Handshake is not really part of the messages
+    KeepAlive = None  # Keep-alive has no ID according to spec
+
+    def encode(self) -> bytes:
+        """
+        Encodes this object instance to the raw bytes representing the entire
+        message (ready to be transmitted).
+        """
+        pass
+
+    @classmethod
+    def decode(cls, data: bytes):
+        """
+        Decodes the given BitTorrent message into a instance for the
+        implementing type.
+        """
+        pass
 
 class Handshake(PeerMessage):
     pass
