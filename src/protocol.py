@@ -376,7 +376,27 @@ class BitField(PeerMessage):
 
 
 class Interested(PeerMessage):
-    pass
+    """
+    The interested message is fix length and has no payload other than the
+    message identifiers. It is used to notify each other about interest in
+    downloading pieces.
+
+    Message format:
+        <len=0001><id=2>
+    """
+
+    def encode(self) -> bytes:
+        """
+        Encodes this object instance to the raw bytes representing the entire
+        message (ready to be transmitted).
+        """
+        return struct.pack('>Ib',
+                           1,  # Message length
+                           PeerMessage.Interested)
+
+    def __str__(self):
+        return 'Interested'
+        
 
 class NotInterested(PeerMessage):
     pass
