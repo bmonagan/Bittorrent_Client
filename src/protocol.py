@@ -168,13 +168,54 @@ class PeerConnection:
         return buf[Handshake.length:]
 
 
-
-
-                
-
-
 class PeerStreamIterator:
-    pass
+    """
+    The `PeerStreamIterator` is an async iterator that continuously reads from
+    the given stream reader and tries to parse valid BitTorrent messages from
+    off that stream of bytes.
+
+    If the connection is dropped, something fails the iterator will abort by
+    raising the `StopAsyncIteration` error ending the calling iteration.
+    """
+    CHUNK_SIZE = 10*1024
+
+    def __init__(self, reader, initial:bytes = None):
+        self.reader = reader
+        self.buffer = initial if initial else b''
+
+    async def __aiter__(self):
+        return self
+    
+    async def __anext__(self):
+        # Read data from the socket. When we have enough data to parse, parse
+        # it and return the message. Until then keep reading from stream
+        while True:
+            try:
+                data = await self.reader.read(PeerStreamIterator.CHUNK_SIZE)
+                if data:
+                    self.buffer += data
+                    message = self.parse()
+                    if message:
+                        return message
+                else:
+                    logging.debug('No data read from stream')
+                    if self.buffer:
+                        message = self.parse()
+                        if message:
+                            return message 
+                    raise StopAsyncIteration()
+            except ConnectionResetError:
+                logging.debug('Connection closed by peer')
+                raise StopAsyncIteration()
+            except CancelledError:
+                raise StopAsyncIteration()
+            except StopAsyncIteration as e:
+                raise e 
+            except Exception:
+                logging.exception('Error when iterating over stream!')
+        raise StopAsyncIteration()          
+
+
 
 class PeerMessage:
     pass
