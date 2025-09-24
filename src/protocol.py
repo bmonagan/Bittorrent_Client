@@ -91,7 +91,7 @@ class PeerConnection:
                             if 'pending_request' not in self.my_state:
                                 self.my_state.append('pending_request')
                                 await self._request_piece()
-            except ProtocolError as e:
+            except ProtocolError:
                 logging.exception('Protocol error')
             except (ConnectionRefusedError, TimeoutError):
                 logging.warning('Unable to connect to peer')
@@ -102,7 +102,19 @@ class PeerConnection:
                 self.cancel()
                 raise e
             self.cancel()
-            
+    def cancel(self):
+        """
+        Sends cancel message to the remote peer and closes the connection
+        """
+
+        logging.info('Closing peer {id}'.format(id=self.remote_id))
+        if not self.future.done():
+            self.future.cancel()
+        if self.writer:
+            self.writer.close()
+
+        self.queue.task_done()
+
                     
                         
 
