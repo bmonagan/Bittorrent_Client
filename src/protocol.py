@@ -413,10 +413,26 @@ class NotInterested(PeerMessage):
     
 
 class Choke(PeerMessage):
-    pass
+    """
+    The choke message is used to tell the other peer to stop send request
+    messages until unchoked.
+
+    Message format:
+        <len=0001><id=0>
+    """
+    def __str__(self):
+        return 'Choke'
 
 class Unchoke(PeerMessage):
-    pass
+    """
+    Unchoking a peer enables that peer to start requesting pieces from the
+    remote peer.
+
+    Message format:
+        <len=0001><id=1>
+    """
+    def __str__(self):
+        return 'Unchoke'
 
 class Have(PeerMessage):
     pass
