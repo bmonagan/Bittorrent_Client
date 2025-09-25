@@ -501,7 +501,51 @@ class Request(PeerMessage):
 
 
 class Piece(PeerMessage):
-    pass
+    """
+    A block is a part of a piece mentioned in the meta-info. The official
+    specification refer to them as pieces as well - which is quite confusing
+    the unofficial specification refers to them as blocks however.
+
+    So this class is named `Piece` to match the message in the specification
+    but really, it represents a `Block` (which is non-existent in the spec).
+
+    Message format:
+        <length prefix><message ID><index><begin><block>
+    """
+    # Message length without the block data
+    length = 9
+
+    def __init__(self,index: int, begin: int, block: bytes):
+        """
+        Constructs the Piece message.
+
+        :param index: The zero based piece index
+        :param begin: The zero based offset within a piece
+        :param block: The block data
+        """
+        self.index = index
+        self.begin = begin
+        self.block = block
+    def encode(self):
+        message_length = Piece.length + len(self.block)
+        return struct.pack('>IbII' + str(len(self.block)) + 's',
+                           message_length,
+                           PeerMessage.Piece,
+                           self.index,
+                           self.begin,
+                           self.block)
+    @classmethod
+    def decode(cls,data: bytes):
+        logging.debug('Decoding Piece of length: {length}'.format(
+            length=len(data)))
+        length = struct.unpack('>I',data[:4])[0]
+        parts = struct.unpack('>IbII' + str(length - Piece.length) + "s"
+                              data[:length+4])
+        return cls(parts[2], parts[3], parts[4])
+    
+    def __str__(self):
+        return 'Piece'
+    
 
 class Cancel(PeerMessage):
     pass
