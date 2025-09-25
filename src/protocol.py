@@ -435,7 +435,28 @@ class Unchoke(PeerMessage):
         return 'Unchoke'
 
 class Have(PeerMessage):
-    pass
+    """
+    Represents a piece successfully downloaded by the remote peer. The piece
+    is a zero based index of the torrents pieces
+    """
+    def __init__(self,index: int):
+        self.index = index
+    
+    def encode(self):
+        return struct.pack('>IbI',
+                           5, #Message Length
+                           PeerMessage.Have,
+                           self.index)
+    
+    @classmethod
+    def decode(cls, data:bytes):
+        logging.debud('Decoding Have of length: {length}'.format(
+            length = len(data)))
+        index = struct.unpack('>IbI', data)[2]
+        return cls(index)
+
+    def __str__(self):
+        return 'Have'
 
 class Request(PeerMessage):
     pass
