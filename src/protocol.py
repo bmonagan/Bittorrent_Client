@@ -548,5 +548,35 @@ class Piece(PeerMessage):
     
 
 class Cancel(PeerMessage):
-    pass
+    """
+    The cancel message is used to cancel a previously requested block (in fact
+    the message is identical (besides from the id) to the Request message).
+
+    Message format:
+         <len=0013><id=8><index><begin><length>
+    """
+
+    def __init__(self, index, begin, length: int = REQUEST_SIZE):
+        self.index = index
+        self.begin = begin
+        self.length = length
+    
+    def encode(self):
+        return struct.pack('>IbIII',
+                           13,
+                           PeerMessage.Cancel,
+                           self.index,
+                           self.begin,
+                           self.length)
+    
+    @classmethod 
+    def decode(cls,data: bytes):
+        logging.debug('Decoding Cancel of length: {length}'.format(
+            length=len(data)))
+        parts = struct.unpack('IbIII',data)
+        return cls(parts[2], parts[3], parts[4])
+    
+    def __str__(self):
+        return 'Cancel'
+
 
