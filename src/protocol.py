@@ -166,7 +166,6 @@ class PeerConnection:
 
         return buf[Handshake.length:]
 
-
 class PeerStreamIterator:
     """
     The `PeerStreamIterator` is an async iterator that continuously reads from
@@ -213,8 +212,6 @@ class PeerStreamIterator:
             except Exception:
                 logging.exception('Error when iterating over stream!')
         raise StopAsyncIteration()  
-
-
 
 class PeerMessage:
     """
@@ -328,7 +325,6 @@ class Handshake(PeerMessage):
     def __str__(self):
         return 'Handshake' 
 
-
 class KeepAlive(PeerMessage):
     """
     The Keep-Alive message has no payload and length is set to zero.
@@ -373,8 +369,6 @@ class BitField(PeerMessage):
     def __str__(self):
         return 'Bitfield'
     
-
-
 class Interested(PeerMessage):
     """
     The interested message is fix length and has no payload other than the
@@ -397,7 +391,6 @@ class Interested(PeerMessage):
     def __str__(self):
         return 'Interested'
         
-
 class NotInterested(PeerMessage):
     """
     The not interested message is fix length and has no payload other than the
@@ -411,7 +404,6 @@ class NotInterested(PeerMessage):
     def __str__(self):
         return 'NotInterested'
     
-
 class Choke(PeerMessage):
     """
     The choke message is used to tell the other peer to stop send request
@@ -499,7 +491,6 @@ class Request(PeerMessage):
     def __str__(self):
         return 'Request'
 
-
 class Piece(PeerMessage):
     """
     A block is a part of a piece mentioned in the meta-info. The official
@@ -546,7 +537,6 @@ class Piece(PeerMessage):
     def __str__(self):
         return 'Piece'
     
-
 class Cancel(PeerMessage):
     """
     The cancel message is used to cancel a previously requested block (in fact
