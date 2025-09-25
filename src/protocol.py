@@ -450,7 +450,7 @@ class Have(PeerMessage):
     
     @classmethod
     def decode(cls, data:bytes):
-        logging.debud('Decoding Have of length: {length}'.format(
+        logging.debug('Decoding Have of length: {length}'.format(
             length = len(data)))
         index = struct.unpack('>IbI', data)[2]
         return cls(index)
@@ -459,7 +459,46 @@ class Have(PeerMessage):
         return 'Have'
 
 class Request(PeerMessage):
-    pass
+    """
+    The message used to request a block of a piece (i.e. a partial piece).
+
+    The request size for each block is 2^14 bytes, except the final block
+    that might be smaller (since not all pieces might be evenly divided by the
+    request size).
+
+    Message format:
+        <len=0013><id=6><index><begin><length>
+    """
+    def __init__(self,index: int, begin: int, length: int = REQUEST_SIZE):
+        """
+        Constructs the Request message.
+
+        :param index: The zero based piece index
+        :param begin: The zero based offset within a piece
+        :param length: The requested length of data (default 2^14)
+        """
+        self.index = index
+        self.begin = begin
+        self.length = length
+
+        def encode(self):
+            return struct.pack('>IbIII',
+                           13,
+                           PeerMessage.Request,
+                           self.index,
+                           self.begin,
+                           self.length)
+        
+        @classmethod
+        def decode(cls, data:bytes):
+            logging.debug('Decoding Have of length: {length}'.format(
+            length = len(data)))
+        index = struct.unpack('>IbI', data)[2]
+        return cls(index)
+
+    def __str__(self):
+        return 'Request'
+
 
 class Piece(PeerMessage):
     pass
