@@ -114,4 +114,22 @@ class TorrentClient:
         self.piece_manager.block_received(
             peer_id=peer_id, piece_index= piece_index,
             block_offset=block_offset, data=data)
-        
+
+class Block:
+    """
+    The block is a partial piece, this is what is requested and transferred
+    between peers.
+
+    A block is most often of the same size as the REQUEST_SIZE, except for the
+    final block which might (most likely) is smaller than REQUEST_SIZE.
+    """
+    Missing = 0
+    Pending = 1
+    Retrieved = 2
+
+    def __init__(self, piece: int, offset: int, length: int):
+        self.piece = piece
+        self.offset = offset
+        self.length = length
+        self.status = Block.Missing
+        self.data = None
