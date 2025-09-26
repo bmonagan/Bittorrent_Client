@@ -183,5 +183,42 @@ class Piece:
             logging.warning('Trying to complete a non-existing block {offset}'
                             .format(offset=offset))
     
+    def is_complete(self) -> bool:
+        """
+        Checks if all blocks for this piece is retrieved (regardless of SHA1)
+
+        :return: True or False
+        """
+        blocks = [b for b in self.blocks if b.status is not Block.Retrieved]
+        return len(blocks) is 0
+    
+    def is_hash_matching(self):
+        """
+        Check if a SHA1 hash for all the received blocks match the piece hash
+        from the torrent meta-info.
+
+        :return: True or False
+        """
+        piece_hash = sha1(self.data).digest()
+        return self.hash == piece_hash
+    
+    @property
+    def data(self):
+        """
+        Return the data for this piece (by concatenating all blocks in order)
+
+        NOTE: This method does not control that all blocks are valid or even
+        existing!
+        """
+        retrieved = sorted(self.blocks, key=lambda b: b.offset)
+        blocks_data = [b.data for b in retrieved]
+        return b''.join(blocks_data)
+    
+
+
+
+
+
+    
 
         
