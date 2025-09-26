@@ -214,6 +214,95 @@ class Piece:
         blocks_data = [b.data for b in retrieved]
         return b''.join(blocks_data)
     
+# The type used for keeping track of pending request that can be re-issued
+PendingRequest = namedtuple('PendingRequest', ['block', 'added'])
+
+class PieceManager:
+    """
+    The PieceManager is responsible for keeping track of all the available
+    pieces for the connected peers as well as the pieces we have available for
+    other peers.
+
+    The strategy on which piece to request is made as simple as possible in
+    this implementation.
+    """
+
+    def __init__(self,torrent):
+        self.torrent = torrent
+        self.peers = {}
+        self.pending_blocks = []
+        self.missing_pieces = []
+        self.ongoing_pieces = []
+        self.have_pieces = []
+        self.max_pending_time = 300 * 1000 # 5 minutes
+        self.missing_pieces = self._initiate_pieces()
+        self.total_pieces = len(torrent.pieces)
+        # Will create a file if it doses not exist already using
+        # the bitwise OR operator
+        self.fd = os.open(self.torrent.output_file, os.O_RDWR | os.O_CREAT)
+
+    def _initiate_pieces(self) -> [Piece]:
+        """
+        Pre-construct the list of pieces and blocks based on the number of
+        pieces and request size for this torrent.
+        """
+        torrent = self.torrent
+        pieces = []
+        total_pieces = len(torrent.pieces)
+        std_piece_blocks = math.ceil(torrent.piece_length / REQUEST_SIZE)
+
+        for index, hash_value in enumerate(torrent.pieces):
+            # The number of blocks for each piece can be calculated using the
+            # request size as divisor for the piece length.
+            # The final piece however, will most likely have fewer blocks
+            # than 'regular' pieces, and that final block might be smaller
+            # then the other blocks.
+            if index < (total_pieces - 1):
+                blocks = [Block(index, offset * REQUEST_SIZE, REQUEST_SIZE)
+                          for offset in range(std_piece_blocks)]
+            else:
+                last_length = torrent.total_size % torrent.piece_length
+                num_blocks = math.ceil(last_length / REQUEST_SIZE)
+                blocks = [Block(index, offset * REQUEST_SIZE, REQUEST_SIZE)
+                          for offset in range(num_blocks)]
+
+                if last_length % REQUEST_SIZE > 0:
+                    # Last block of the last piece might be smaller than
+                    # the ordinary request size.
+                    last_block = blocks[-1]
+                    last_block.length = last_length % REQUEST_SIZE
+                    blocks[-1] = last_block
+            pieces.append(Piece(index, blocks, hash_value))
+        return pieces 
+    
+    def close(self):
+        """
+        Close any resources used by the PieceManager (such as open files)
+        """
+        if self.fd:
+            os.close(self.fd)
+    
+    @property
+    def complete(self):
+        """
+        Checks whether or not the all pieces are downloaded for this torrent.
+
+        :return: True if all pieces are fully downloaded else False
+        """
+        return len(self.have_pieces) == self.total_pieces
+    
+    @property 
+    def bytes_downloaded(self) -> int:
+        """
+        Get the number of bytes downloaded.
+        This method only counts full, verified, pieces, not single blocks.
+        """
+        return len(self.have_pieces) * self.torrent.piece_length
+    
+    @property
+    def byte_uploaded(self) -> int:
+        # TODO Add support for sending data
+        return 0
 
 
 
