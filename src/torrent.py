@@ -1,7 +1,7 @@
 from hashlib import sha1
 from collections import namedtuple
 
-from . import bencoding
+from bencoding import encode, decode
 
 #Reprsents the files within the torrent
 TorrentFile = namedtuple('TorrentFile',['name','length'])
@@ -17,7 +17,7 @@ class Torrent:
             info = bencoding.encode(self.meta_info[b'info']).encode()
             #TODO research if sha 1 is still the correct choice for something like this.
             self.info_hash = sha1(info).digest()
-            self._identity_files()
+            self._identify_files()
         
 
         def _identify_files(self):

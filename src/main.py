@@ -4,9 +4,8 @@ import signal
 import logging
 from concurrent.futures import CancelledError
 
-
-from .torrent import Torrent
-from .client import TorrentClient
+from torrent import Torrent
+from client import TorrentClient
 
 
 def main():
