@@ -530,7 +530,7 @@ class Piece(PeerMessage):
         logging.debug('Decoding Piece of length: {length}'.format(
             length=len(data)))
         length = struct.unpack('>I',data[:4])[0]
-        parts = struct.unpack('>IbII' + str(length - Piece.length) + "s"
+        parts = struct.unpack('>IbII' + str(length - Piece.length) + "s",
                               data[:length+4])
         return cls(parts[2], parts[3], parts[4])
     
