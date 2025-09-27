@@ -300,7 +300,7 @@ class PieceManager:
         return len(self.have_pieces) * self.torrent.piece_length
     
     @property
-    def byte_uploaded(self) -> int:
+    def bytes_uploaded(self) -> int:
         # TODO Add support for sending data
         return 0
 
