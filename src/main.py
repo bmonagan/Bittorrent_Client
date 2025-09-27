@@ -15,11 +15,9 @@ def main():
                         help='the .torrent to download')
     parser.add_argument("-v","--verbose",action='store_true',
                         help ='enable verbose output')
-    
     args = parser.parse_args()
     if args.verbose:
         logging.basicConfig(level=logging.info)
-    
 
     loop = asyncio.get_event_loop()
     client = TorrentClient(Torrent(args.torrent))
