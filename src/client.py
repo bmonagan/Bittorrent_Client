@@ -190,7 +190,7 @@ class Piece:
         :return: True or False
         """
         blocks = [b for b in self.blocks if b.status is not Block.Retrieved]
-        return len(blocks) is 0
+        return len(blocks) == 0
     
     def is_hash_matching(self):
         """
