@@ -303,6 +303,59 @@ class PieceManager:
     def bytes_uploaded(self) -> int:
         # TODO Add support for sending data
         return 0
+    
+    def add_peer(self,peer_id, bitfield):
+        """
+        Adds a peer and the bitfield representing the pieces the peer has.
+        """
+        self.peers[peer_id] = bitfield
+    
+    def update_peer(self, peer_id, index: int):
+        """
+        Updates the information about which pieces a peer has (reflects a Have
+        message).
+        """
+        if peer_id in self.peers:
+            self.peers[peer_id][index] = 1
+    
+    def remove_peer(self, peer_id):
+        """
+        Tries to remove a previously added peer(e.g, used if a peer connection is dropped)
+        """
+        if peer_id in self.peers:
+            del self.peers[peer_id]
+    
+    def next_request(self, peer_id) -> Block:
+        """
+        Get the next Block that should be requested from the given peer.
+
+        If there are no more blocks left to retrieve or if this peer does not
+        have any of the missing pieces None is returned
+        """
+        # The algorithm implemented for which piece to retrieve is a simple
+        # one. This should preferably be replaced with an implementation of
+        # "rarest-piece-first" algorithm instead.
+        #
+        # The algorithm tries to download the pieces in sequence and will try
+        # to finish started pieces before starting with new pieces.
+        #
+        # 1. Check any pending blocks to see if any request should be reissued
+        #    due to timeout
+        # 2. Check the ongoing pieces to get the next block to request
+        # 3. Check if this peer have any of the missing pieces not yet started
+        if peer_id not in self.peers:
+            return None
+        
+        block = self._expired_requests(peer_id)
+        if not block:
+            block = self._next_ongoing(peer_id)
+            if not block:
+                block = self._get_rarest_piece(peer_id).next_request()
+        return block
+
+
+
+
 
 
 
