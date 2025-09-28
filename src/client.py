@@ -398,7 +398,45 @@ class PieceManager:
                     piece.reset()
             else:
                 logging.warning('Trying to update piece that is not ongoing!')
+    
+    def _expired_requests(self, peer_id) -> Block:
+        """
+        Go through previously requested blocks, if any one have been in the
+        requested state for longer than `MAX_PENDING_TIME` return the block to
+        be re-requested.
+
+        If no pending blocks exist, None is returned
+        """
+        current = int(round(time.time() * 1000))
+        for request in self.pending_blocks:
+            if self.peers[peer_id][request.block.piece]:
+                if request.added + self.max_pending_time < current:
+                    logging.info('Re-requesting block {block} for'
+                                 'piece {piece}'.format(
+                                    block=request.block.offset,
+                                    piece=request.block.piece))
+                    # Reset expiration timer
+                    request.added = current
+                    return request.block
         
+        return None
+    
+    def _next_ongoing(self, peer_id) -> Block:
+        """
+        Go through the ongoing pieces and reutrn the next block to be
+        requested or None if no block is left to be requested.
+        """
+        for piece in self.ongoing_pieces:
+            if self.peers[peer_id][piece.index]:
+                #Is there any blocks left to request in this piece?
+                block = piece.next_request()
+                if block:
+                    self.pending_block.append(
+                        PendingRequest(block, int(round(time.time()* 1000))))
+                    return block
+        
+        return None 
+
 
 
 
