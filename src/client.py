@@ -435,10 +435,53 @@ class PieceManager:
                         PendingRequest(block, int(round(time.time()* 1000))))
                     return block
         
+        return None
+    
+    def _get_rarest_piece(self, peer_id):
+        """
+        Given the current list of missing pieces, get the
+        rarest one first (i.e. a piece which fewest of its
+        neighboring peers have)
+        """
+        piece_count = defaultdict(int)
+        for piece in self.missing_pieces:
+            if not self.peers[peer_id][piece.index]:
+                continue
+            for p in self.peers:
+                if self.peers[p][p.index]:
+                    piece_count[piece] += 1 
+        
+        rarest_piece = min(piece_count, key=lambda p: piece_count[p])
+        self.missing_pieces.remove(rarest_piece)
+        self.ongoing_pieces.append(rarest_piece)
+        return rarest_piece
+
+    def _next_missing(self, peer_id) -> Block:
+        """
+        Go through the missing pieces and return the next block to request
+        or None if no block is left to be requested.
+        
+        This will change the state of the piece from missing to ongoing - thus
+        the next call to this function will not continue with the blocks for 
+        that piece, rather get the next missing piece.
+        """
+        for index, piece in enumerate(self.missing_pieces):
+            if self.peers[peer_id][piece.index]:
+                #Move this peice from missing to ongoing
+                piece = self.missing_pieces.pop(index)
+                self.ongoing_pieces.append(piece)
+                # The missing pieces does not have any previously requested
+                # blocks (then it is ongoing)
+                return piece.next_request()
         return None 
-
-
-
+    
+    def _write(self,piece):
+        """
+        Write the given piece to disk
+        """
+        pos = piece.index * self.torrent.piece_length
+        os.lseek(self.fd, pos, os.SEEK_SET)
+        os.write(self.fd, piece.data)
 
 
 
