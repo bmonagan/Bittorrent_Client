@@ -7,6 +7,19 @@ from .local_bencoding import encode, decode
 TorrentFile = namedtuple('TorrentFile',['name','length'])
 
 class Torrent:
+    """
+    Represents a .torrent file and provides access to its metadata.
+
+    This class parses the .torrent file, extracts relevant information such as file name,
+    file length, announce URL, piece hashes, and other metadata. It currently supports only
+    single-file torrents. Multi-file torrents will raise a RuntimeError.
+
+    Attributes:
+        filename (str): Path to the .torrent file.
+        files (list[TorrentFile]): List of files described by the torrent (single file supported).
+        meta_info (dict): Decoded bencoded metadata from the torrent file.
+        info_hash (bytes): SHA-1 hash of the bencoded 'info' dictionary.
+    """
     def __init__(self,filename):
         self.filename = filename
         self.files = []
@@ -17,8 +30,7 @@ class Torrent:
             info = encode(self.meta_info[b'info'])
             #TODO research if sha 1 is still the correct choice for something like this.
             self.info_hash = sha1(info).digest()
-            self._identify_files()
-        
+            self._identify_files()   
 
     def _identify_files(self):
         """
@@ -32,28 +44,28 @@ class Torrent:
             TorrentFile(
                 self.meta_info[b'info'][b'name'].decode('utf-8'),
                 self.meta_info[b'info'][b'length']))
-    
+
     @property
     def announce(self) -> str:
         """
         Announces URL to tracker
         """
         return self.meta_info[b'announce'].decode('utf-8')
-    
+
     @property
     def multi_file(self) -> bool:
         """
         Checks if torrent contains multiple files
         """
         return b'files' in self.meta_info[b'info']
-    
+
     @property
     def piece_length(self) -> int:
         """
         Gets the length in bytes for each piece of download
         """
         return self.meta_info[b'info'][b'piece length']
-    
+
     @property
     def total_size(self) -> int:
         """
@@ -62,7 +74,7 @@ class Torrent:
         if self.multi_file:
             raise RuntimeError('Multi-file torrents are not supported!')
         return self.files[0].length
-    
+
     @property
     def pieces(self) -> list[str]:
         """
@@ -77,12 +89,12 @@ class Torrent:
         while offset < length:
             pieces.append(data[offset:offset + 20])
             offset += 20
-        return pieces 
-
-    @property 
+        return pieces
+    
+    @property
     def output_file(self):
         return self.meta_info[b'info'][b'name'].decode('utf-8')
-    
+
     def __str__(self):
         return (f"Filename: {self.meta_info[b'info'][b'name'].decode('utf-8')}\n"
                 f"File length: {self.meta_info[b'info'][b'length']}\n"
