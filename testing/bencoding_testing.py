@@ -1,3 +1,4 @@
+# pylint: skip-file
 import bencodepy
 
 # Example bencoded data (dictionary, string, list)
