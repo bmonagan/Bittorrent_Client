@@ -7,7 +7,7 @@ import random
 from struct import unpack
 from urllib.parse import urlencode
 
-import local_bencoding
+from . import local_bencoding
 
 
 class TrackerResponse:

@@ -1,7 +1,7 @@
 from hashlib import sha1
 from collections import namedtuple
 
-from local_bencoding import encode, decode
+from .local_bencoding import encode, decode
 
 #Reprsents the files within the torrent
 TorrentFile = namedtuple('TorrentFile',['name','length'])

@@ -4,8 +4,8 @@ import signal
 import logging
 from concurrent.futures import CancelledError
 
-from torrent import Torrent
-from client import TorrentClient
+from .torrent import Torrent
+from .client import TorrentClient
 
 
 def main():
@@ -33,3 +33,6 @@ def main():
         loop.run_until_complete(task)
     except CancelledError:
         logging.warning('Event loop was canceled.')
+
+if __name__ == "__main__":
+    main()
