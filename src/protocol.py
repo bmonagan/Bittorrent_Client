@@ -26,7 +26,7 @@ class PeerConnection:
         self.reader = None
         self.piece_manager = piece_manager
         self.on_block_cb = on_block_cb
-        self.future= asyncio.ensure_future(self.start())
+        self.future= asyncio.ensure_future(self._start())
     
     async def _start(self):
         while 'stopped' not in self.my_state:
