@@ -145,7 +145,7 @@ class Piece:
     uses piece for this one as well, which is slightly confusing).
     """
 
-    def __init__(self, index: int, block: [], hash_value):
+    def __init__(self, index: int, blocks: [], hash_value):
         self.index = index
         self.blocks = blocks
         self.hash = hash_value
