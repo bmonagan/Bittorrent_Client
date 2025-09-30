@@ -1,4 +1,3 @@
-
 import aiohttp
 import random
 import logging
@@ -70,15 +69,17 @@ class Tracker:
     Connection to a tracker for a given torrent that is either under download or seeding state.
     """
 
-    def __init__(self,torrent):
+    def __init__(self, torrent):
         self.torrent = torrent
         self.peer_id = self.generate_peer_id()
-        self.http_client = aiohttp.ClientSession()
+        self.http_client = None  # Don't create session here
 
     async def connect(self,
-                    first: bool=None,
-                    uploaded: int=0,
-                    downloaded: int=0):
+                      first: bool = None,
+                      uploaded: int = 0,
+                      downloaded: int = 0):
+        if self.http_client is None:
+            self.http_client = aiohttp.ClientSession()
         params = { 
             'info_hash': self.torrent.info_hash,
             'peer_id': self.peer_id,
@@ -87,19 +88,20 @@ class Tracker:
             'left': self.torrent.total_size - downloaded,
             'compact': 1
         }
-        
         if first:
             params['event'] = 'started'
         url = self.torrent.announce + '?' + urlencode(params)
-        logging.info('Connecting to tracker at: ') + url
+        logging.info('Connecting to tracker at: %s', url)
 
         async with self.http_client.get(url) as response:
             if not response.status == 200:
                 raise ConnectionError('Unable to connect to tracker')
             data = await response.read()
-            return TrackerResponse(bencoding.decode(data))
-    def close(self):
-        self.http_client.close()
+            return TrackerResponse(local_bencoding.decode(data))
+
+    async def close(self):
+        if self.http_client:
+            await self.http_client.close()
     
     def raise_for_error(self,tracker_response):
         pass
