@@ -37,12 +37,16 @@ class Torrent:
         """
 
         if self.multi_file:
-            #TODO add support for multi-file torrents
-            raise RuntimeError('Multi-file torrents is not supported!')
-        self.files.append(
-            TorrentFile(
-                self.meta_info[b'info'][b'name'].decode('utf-8'),
-                self.meta_info[b'info'][b'length']))
+            #TODO further testing for multi-file torrents.
+            root = self.meta_info[b'info'][b'name'].decode('utf-8')
+            for file in self.meta_info[b'info'][b'files']:
+                path = '/'.join([root] + [p.decode('utf-8') for p in file[b'path']])
+                self.files.append(TorrentFile(path,file[b'length']))
+        else:
+            self.files.append(
+                TorrentFile(
+                    self.meta_info[b'info'][b'name'].decode('utf-8'),
+                    self.meta_info[b'info'][b'length']))
 
     @property
     def announce(self) -> str:
