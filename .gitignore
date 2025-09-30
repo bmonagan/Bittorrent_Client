@@ -12,3 +12,11 @@ wheels/
 
 # Notes and misc
 *.md
+
+# Data
+data/
+*.csv
+*.json
+*.sqlite3
+logs/
+*.log
