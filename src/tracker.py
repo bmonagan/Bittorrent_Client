@@ -73,7 +73,7 @@ class Tracker:
     def __init__(self,torrent):
         self.torrent = torrent
         self.peer_id = self.generate_peer_id()
-        self.http_client = aiohttp.ClientSeesion()
+        self.http_client = aiohttp.ClientSession()
 
     async def connect(self,
                     first: bool=None,
