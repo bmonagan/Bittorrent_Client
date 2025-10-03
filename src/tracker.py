@@ -40,16 +40,18 @@ class TrackerResponse:
         """
         a list of tuples for each peer (ip,port)
         """
+        if b'failure reason' in self.response:
+            reason = self.response[b'failure reason'].decode('utf-8')
+            raise RuntimeError(f"Tracker failure: {reason}")
+        if b'peers' not in self.response:
+            raise RuntimeError("No peers returned by tracker. The tracker may be overloaded, down, or your request was invalid.")
         peers = self.response[b'peers']
         if type(peers) == list:
-            #TODO implement support for dictionary peer list 
             logging.debug('Dictionary model peers are return by tracker')
             raise NotImplementedError
         else:
             logging.debug('Binary model peers are returned by tracker')
-
             peers = [peers[i:i+6] for i in range(0, len(peers), 6)]
-
             return [(socket.inet_ntoa(p[:4]), self._decode_port(p[4:]))
                     for p in peers]
     
