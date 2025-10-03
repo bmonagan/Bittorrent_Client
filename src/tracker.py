@@ -6,7 +6,7 @@ import random
 from struct import unpack
 from urllib.parse import urlencode
 
-from bencodepy import decode, encode
+from bencodepy import decode
 
 
 class TrackerResponse:
@@ -52,9 +52,12 @@ class TrackerResponse:
         else:
             logging.debug('Binary model peers are returned by tracker')
             peers = [peers[i:i+6] for i in range(0, len(peers), 6)]
-            return [(socket.inet_ntoa(p[:4]), self._decode_port(p[4:]))
+            return [(socket.inet_ntoa(p[:4]), self.decode_port(p[4:]))
                     for p in peers]
     
+    def decode_port(self, port):
+        return unpack(">H", port)[0]
+
     def __str__(self):
         return "incomplete: {incomplete}\n" \
                "complete: {complete}\n" \
@@ -119,11 +122,6 @@ class Tracker:
             'left': 0,
             'compact': 1
         }
-    
-    def _decode_port(self,port):
-        return unpack(">H", port)[0]
-    
-
     def generate_peer_id(self)-> str:
         """
         Generates a unique BitTorrent peer ID using the Azureus-style convention.
