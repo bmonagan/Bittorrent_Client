@@ -50,13 +50,19 @@ class Torrent:
     @property
     def announce(self) -> str:
         """
-        Announces URL to tracker
+        Announces URL to tracker 
         """
-        #TODO skip UDP for now and in the future add in UDP support.
-        announce_url = self.meta_info[b'announce'].decode('utf-8')
-        if announce_url.startswith("udp://"):
-            raise ValueError("UDP trackers are not supported. Please use a .torrent file with an HTTP tracker.")
-        return announce_url
+        # TODO skip UDP for now and in the future add in UDP support.
+        announce_list = self.meta_info.get(b'announce-list', [])
+        for announce_url in announce_list:
+            url = announce_url[0]
+            if url.startswith(b'http://') or url.startswith(b'https://'):
+                return url.decode('utf-8')
+        # Fallback to single announce if announce-list is missing
+        url = self.meta_info.get(b'announce')
+        if url and (url.startswith(b'http://') or url.startswith(b'https://')):
+            return url.decode('utf-8')
+        raise ValueError('Only HTTP(S) trackers are supported. Find a torrent with HTTP(S) in announce list.')
 
     @property
     def multi_file(self) -> bool:
