@@ -52,6 +52,7 @@ class Torrent:
         """
         Announces URL to tracker
         """
+        print(self.meta_info.keys())
         return self.meta_info[b'announce'].decode('utf-8')
 
     @property
