@@ -52,8 +52,11 @@ class Torrent:
         """
         Announces URL to tracker
         """
-        print(self.meta_info.keys())
-        return self.meta_info[b'announce'].decode('utf-8')
+        #TODO skip UDP for now and in the future add in UDP support.
+        announce_url = self.meta_info[b'announce'].decode('utf-8')
+        if announce_url.startswith("udp://"):
+            raise ValueError("UDP trackers are not supported. Please use a .torrent file with an HTTP tracker.")
+        return announce_url
 
     @property
     def multi_file(self) -> bool:
