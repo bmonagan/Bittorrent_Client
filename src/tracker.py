@@ -1,8 +1,16 @@
+"""
+This module provides classes for interacting with BitTorrent trackers.
+
+- TrackerResponse: Parses and exposes information from a tracker's bencoded response, including peers, completion stats, and failure reasons.
+- Tracker: Manages communication with a tracker for a given torrent, including announcing, peer discovery, and session management.
+
+Designed for use in a BitTorrent client implementation.
+"""
+
 import aiohttp
 import random
 import logging
 import socket
-import random
 from struct import unpack
 from urllib.parse import urlencode
 
@@ -10,7 +18,7 @@ from bencodepy import decode
 
 
 class TrackerResponse:
-    def __init__(self,repsonse: dict):
+    def __init__(self, repsonse: dict):
         self.response = repsonse
     
     @property
@@ -108,7 +116,7 @@ class Tracker:
         if self.http_client:
             await self.http_client.close()
     
-    def raise_for_error(self,tracker_response):
+    def raise_for_error(self, tracker_response):
         pass
     
     def _construct_tracker_parameters(self):
