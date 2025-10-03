@@ -6,7 +6,7 @@ import random
 from struct import unpack
 from urllib.parse import urlencode
 
-from . import local_bencoding
+from bencodepy import decode, encode
 
 
 class TrackerResponse:
@@ -50,7 +50,7 @@ class TrackerResponse:
 
             peers = [peers[i:i+6] for i in range(0, len(peers), 6)]
 
-            return [(socket.inet_ntoa(p[:4]), self.decode_port(p[4:]))
+            return [(socket.inet_ntoa(p[:4]), self._decode_port(p[4:]))
                     for p in peers]
     
     def __str__(self):
@@ -97,7 +97,7 @@ class Tracker:
             if not response.status == 200:
                 raise ConnectionError('Unable to connect to tracker')
             data = await response.read()
-            return TrackerResponse(local_bencoding.decode(data))
+            return TrackerResponse(decode(data))
 
     async def close(self):
         if self.http_client:
@@ -118,7 +118,7 @@ class Tracker:
             'compact': 1
         }
     
-    def decode_port(self,port):
+    def _decode_port(self,port):
         return unpack(">H", port)[0]
     
 
