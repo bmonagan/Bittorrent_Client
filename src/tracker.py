@@ -1,8 +1,14 @@
 """
 This module provides classes for interacting with BitTorrent trackers.
 
-- TrackerResponse: Parses and exposes information from a tracker's bencoded response, including peers, completion stats, and failure reasons.
-- Tracker: Manages communication with a tracker for a given torrent, including announcing, peer discovery, and session management.
+- TrackerResponse: Represents and parses the response from a BitTorrent tracker.
+    This class provides convenient access to fields in the tracker's bencoded response,
+    such as the failure reason, announce interval, number of seeders (complete),
+    number of leechers (incomplete), and the list of peers. It supports both binary
+    and dictionary peer models (though only binary is implemented).
+
+- Tracker: Manages communication with a tracker for a given torrent, 
+    including announcing, peer discovery, and session management.
 
 Designed for use in a BitTorrent client implementation.
 """
@@ -20,6 +26,24 @@ from bencodepy import decode
 
 
 class TrackerResponse:
+    """
+    Represents and parses the response from a BitTorrent tracker.
+
+    This class provides convenient access to fields in the tracker's bencoded response,
+    such as the failure reason, announce interval, number of seeders (complete),
+    number of leechers (incomplete), and the list of peers. It supports both binary
+    and dictionary peer models (though only binary is implemented).
+
+    Attributes:
+        response (dict): The decoded bencoded response from the tracker.
+
+    Properties:
+        failure (str or None): The failure reason if present.
+        interval (int): The recommended interval for re-announcing.
+        complete (int): Number of seeders.
+        incomplete (int): Number of leechers.
+        peers (list): List of (ip, port) tuples for each peer.
+    """
     def __init__(self, repsonse: dict):
         self.response = repsonse
     
