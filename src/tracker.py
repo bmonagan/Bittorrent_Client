@@ -6,15 +6,17 @@ This module provides classes for interacting with BitTorrent trackers.
 
 Designed for use in a BitTorrent client implementation.
 """
-
-import aiohttp
-import random
+# Standard library imports
 import logging
+import random
 import socket
 from struct import unpack
 from urllib.parse import urlencode
 
+# Third-party imports
+import aiohttp
 from bencodepy import decode
+
 
 
 class TrackerResponse:
