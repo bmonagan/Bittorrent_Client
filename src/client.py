@@ -56,7 +56,7 @@ class TorrentClient:
                                      self.tracker.peer_id,
                                      self.piece_manager,
                                      self._on_block_retrieved)
-                                for _ in range(MAX_PEER_CONNECTIONS)] # TODO: figure out what this line is doing
+                                for _ in range(MAX_PEER_CONNECTIONS)] # Creates peer connection workers(up to 40 connections)
         # Last announce call timestamp
         previous = None 
         # Default interval between announce calls
@@ -145,7 +145,7 @@ class Piece:
     uses piece for this one as well, which is slightly confusing).
     """
 
-    def __init__(self, index: int, blocks: [], hash_value):
+    def __init__(self, index: int, blocks: list, hash_value):
         self.index = index
         self.blocks = blocks
         self.hash = hash_value
@@ -417,10 +417,8 @@ class PieceManager:
                                     piece=request.block.piece))
                     # Reset expiration timer
                     request.added = current
-                    return request.block
-        
+                    return request.block   
         return None
-    
     def _next_ongoing(self, peer_id) -> Block:
         """
         Go through the ongoing pieces and reutrn the next block to be
@@ -431,10 +429,9 @@ class PieceManager:
                 #Is there any blocks left to request in this piece?
                 block = piece.next_request()
                 if block:
-                    self.pending_block.append(
+                    self.pending_blocks.append(
                         PendingRequest(block, int(round(time.time()* 1000))))
-                    return block
-        
+                    return block     
         return None
     
     def _get_rarest_piece(self, peer_id):
