@@ -85,19 +85,16 @@ class TrackerResponse:
             peers = [peers[i:i+6] for i in range(0, len(peers), 6)]
             return [(socket.inet_ntoa(p[:4]), self.decode_port(p[4:]))
                     for p in peers]
-    
     def decode_port(self, port):
         return unpack(">H", port)[0]
 
     def __str__(self):
-        return "incomplete: {incomplete}\n" \
-               "complete: {complete}\n" \
-               "interval: {interval}\n" \
-               "peers: {peers}\n".format(
-                   incomplete=self.incomplete,
-                   complete=self.complete,
-                   interval=self.interval,
-                   peers=", ".join([x for (x, _) in self.peers]))
+        return (
+            f"incomplete: {self.incomplete}\n"
+            f"complete: {self.complete}\n"
+            f"interval: {self.interval}\n"
+            f"peers: {', '.join([x for (x, _) in self.peers])}\n"
+        )
 
 
 class Tracker:
@@ -116,7 +113,7 @@ class Tracker:
                       downloaded: int = 0):
         if self.http_client is None:
             self.http_client = aiohttp.ClientSession()
-        params = { 
+        params = {
             'info_hash': self.torrent.info_hash,
             'peer_id': self.peer_id,
             'uploaded': uploaded,
@@ -138,10 +135,9 @@ class Tracker:
     async def close(self):
         if self.http_client:
             await self.http_client.close()
-    
+
     def raise_for_error(self, tracker_response):
         pass
-    
     def _construct_tracker_parameters(self):
         #TODO update when communicating with tracker.
         return {
