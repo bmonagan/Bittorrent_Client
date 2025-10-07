@@ -46,18 +46,15 @@ class TrackerResponse:
     """
     def __init__(self, repsonse: dict):
         self.response = repsonse
-    
     @property
     def failure(self):
         # b'' means that it is a bytes literal, meaning it contains raw byte data.
         if b'failure reason' in self.response:
             return self.response[b'failure reason'].decode('utf-8')
         return None
-    
     @property
     def interval(self) -> int:
-        return self.response.get(b'interval',0)
-    
+        return self.response.get(b'interval',0) 
     @property
     def complete(self) -> int:
         return self.response.get(b'complete',0)
@@ -68,7 +65,6 @@ class TrackerResponse:
         Number of leechers.
         """
         return self.response.get(b'incomplete',0)
-    
     @property 
     def peers(self):
         """
