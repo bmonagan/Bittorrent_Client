@@ -54,18 +54,18 @@ class TrackerResponse:
         return None
     @property
     def interval(self) -> int:
-        return self.response.get(b'interval',0) 
+        return self.response.get(b'interval',0)
     @property
     def complete(self) -> int:
         return self.response.get(b'complete',0)
 
-    @property 
+    @property
     def incomplete(self) -> int:
         """
         Number of leechers.
         """
         return self.response.get(b'incomplete',0)
-    @property 
+    @property
     def peers(self):
         """
         a list of tuples for each peer (ip,port)
@@ -74,10 +74,11 @@ class TrackerResponse:
             reason = self.response[b'failure reason'].decode('utf-8')
             raise RuntimeError(f"Tracker failure: {reason}")
         if b'peers' not in self.response:
-            raise RuntimeError("No peers returned by tracker. The tracker may be overloaded, down, or your request was invalid.")
+            raise RuntimeError("No peers returned by tracker. "
+                               "The tracker may be overloaded, down, or your request was invalid.")
         peers = self.response[b'peers']
-        if type(peers) == list:
-            logging.debug('Dictionary model peers are return by tracker')
+        if isinstance(peers, list):
+            logging.debug('Dictionary model peers are returned by tracker')
             raise NotImplementedError
         else:
             logging.debug('Binary model peers are returned by tracker')
