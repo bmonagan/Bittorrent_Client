@@ -56,9 +56,10 @@ class TorrentClient:
                                      self.tracker.peer_id,
                                      self.piece_manager,
                                      self._on_block_retrieved)
-                                for _ in range(MAX_PEER_CONNECTIONS)] # Creates peer connection workers(up to 40 connections)
+                                # Creates peer connection workers(up to 40 connections)
+                                for _ in range(MAX_PEER_CONNECTIONS)]
         # Last announce call timestamp
-        previous = None 
+        previous = None
         # Default interval between announce calls
         interval = 30*60
 
@@ -76,7 +77,7 @@ class TorrentClient:
                     first=previous if previous else False,
                     uploaded=self.piece_manager.bytes_uploaded,
                     downloaded=self.piece_manager.bytes_downloaded)
-                
+            
                 if response:
                     previous = current
                     interval = response.interval
@@ -94,7 +95,7 @@ class TorrentClient:
     def stop(self):
         """
         Stop the download or seeding process.
-        """             
+        """
         self.abort = True
         for peer in self.peers:
             peer.stop()
@@ -149,7 +150,7 @@ class Piece:
         self.index = index
         self.blocks = blocks
         self.hash = hash_value
-    
+
     def reset(self):
         """
         Reset all blocks to missing regarless of current state
@@ -180,8 +181,7 @@ class Piece:
             block.status = Block.Retrieved
             block.data = data
         else:
-            logging.warning('Trying to complete a non-existing block {offset}'
-                            .format(offset=offset))
+            logging.warning('Trying to complete a non-existing block %s', offset)
     
     def is_complete(self) -> bool:
         """
@@ -241,7 +241,7 @@ class PieceManager:
         # the bitwise OR operator
         self.fd = os.open(self.torrent.output_file, os.O_RDWR | os.O_CREAT)
 
-    def _initiate_pieces(self) -> [Piece]:
+    def _initiate_pieces(self) -> list[Piece]:
         """
         Pre-construct the list of pieces and blocks based on the number of
         pieces and request size for this torrent.
@@ -363,10 +363,8 @@ class PieceManager:
         be fetched again. If the hash succeeds the partial piece is written to
         disk and the piece is indicated as Have.
         """
-        logging.debug('Received block {block_offset} for piece {piece_index} '
-                      'from peer {peer_id}: '.format(block_offset=block_offset,
-                                                     piece_index=piece_index,
-                                                     peer_id=peer_id))
+        logging.debug('Received block %s for piece %s from peer %s:',
+                      block_offset, piece_index, peer_id)
         
         # Remove from pending requests
         for index, request in enumerate(self.pending_blocks):
@@ -393,8 +391,7 @@ class PieceManager:
                                 total=self.total_pieces,
                                 per=(complete/self.total_pieces)*100))
                 else:
-                    logging.info('Discarding corrupt piece {index}'
-                                 .format(index=piece.index))
+                    logging.info('Discarding corrupt piece %s', piece.index)
                     piece.reset()
             else:
                 logging.warning('Trying to update piece that is not ongoing!')
@@ -411,10 +408,8 @@ class PieceManager:
         for request in self.pending_blocks:
             if self.peers[peer_id][request.block.piece]:
                 if request.added + self.max_pending_time < current:
-                    logging.info('Re-requesting block {block} for'
-                                 'piece {piece}'.format(
-                                    block=request.block.offset,
-                                    piece=request.block.piece))
+                    logging.info('Re-requesting block %s for piece %s',
+                                 request.block.offset, request.block.piece)
                     # Reset expiration timer
                     request.added = current
                     return request.block   
@@ -487,6 +482,6 @@ class PieceManager:
 
 
 
-    
 
-        
+
+
