@@ -77,7 +77,6 @@ class TorrentClient:
                     first=previous if previous else False,
                     uploaded=self.piece_manager.bytes_uploaded,
                     downloaded=self.piece_manager.bytes_downloaded)
-            
                 if response:
                     previous = current
                     interval = response.interval
@@ -157,7 +156,7 @@ class Piece:
         """
         for block in self.blocks:
             block.status = Block.Missing
-    
+
     def next_request(self) -> Block:
         """
         Get the next Block to be requested
@@ -167,7 +166,7 @@ class Piece:
             missing[0].status = Block.Pending
             return missing[0]
         return None
-    
+
     def block_received(self, offset: int, data: bytes):
         """
         Update block information that the given block is now received
@@ -182,7 +181,7 @@ class Piece:
             block.data = data
         else:
             logging.warning('Trying to complete a non-existing block %s', offset)
-    
+
     def is_complete(self) -> bool:
         """
         Checks if all blocks for this piece is retrieved (regardless of SHA1)
@@ -191,7 +190,7 @@ class Piece:
         """
         blocks = [b for b in self.blocks if b.status is not Block.Retrieved]
         return len(blocks) == 0
-    
+
     def is_hash_matching(self):
         """
         Check if a SHA1 hash for all the received blocks match the piece hash
@@ -201,7 +200,7 @@ class Piece:
         """
         piece_hash = sha1(self.data).digest()
         return self.hash == piece_hash
-    
+
     @property
     def data(self):
         """
@@ -213,7 +212,7 @@ class Piece:
         retrieved = sorted(self.blocks, key=lambda b: b.offset)
         blocks_data = [b.data for b in retrieved]
         return b''.join(blocks_data)
-    
+
 # The type used for keeping track of pending request that can be re-issued
 PendingRequest = namedtuple('PendingRequest', ['block', 'added'])
 
@@ -273,15 +272,15 @@ class PieceManager:
                     last_block.length = last_length % REQUEST_SIZE
                     blocks[-1] = last_block
             pieces.append(Piece(index, blocks, hash_value))
-        return pieces 
-    
+        return pieces
+
     def close(self):
         """
         Close any resources used by the PieceManager (such as open files)
         """
         if self.fd:
             os.close(self.fd)
-    
+
     @property
     def complete(self):
         """
@@ -290,26 +289,26 @@ class PieceManager:
         :return: True if all pieces are fully downloaded else False
         """
         return len(self.have_pieces) == self.total_pieces
-    
-    @property 
+
+    @property
     def bytes_downloaded(self) -> int:
         """
         Get the number of bytes downloaded.
         This method only counts full, verified, pieces, not single blocks.
         """
         return len(self.have_pieces) * self.torrent.piece_length
-    
+
     @property
     def bytes_uploaded(self) -> int:
         # TODO Add support for sending data
         return 0
-    
+
     def add_peer(self,peer_id, bitfield):
         """
         Adds a peer and the bitfield representing the pieces the peer has.
         """
         self.peers[peer_id] = bitfield
-    
+
     def update_peer(self, peer_id, index: int):
         """
         Updates the information about which pieces a peer has (reflects a Have
@@ -317,14 +316,14 @@ class PieceManager:
         """
         if peer_id in self.peers:
             self.peers[peer_id][index] = 1
-    
+
     def remove_peer(self, peer_id):
         """
         Tries to remove a previously added peer(e.g, used if a peer connection is dropped)
         """
         if peer_id in self.peers:
             del self.peers[peer_id]
-    
+
     def next_request(self, peer_id) -> Block:
         """
         Get the next Block that should be requested from the given peer.
@@ -345,14 +344,13 @@ class PieceManager:
         # 3. Check if this peer have any of the missing pieces not yet started
         if peer_id not in self.peers:
             return None
-        
         block = self._expired_requests(peer_id)
         if not block:
             block = self._next_ongoing(peer_id)
             if not block:
                 block = self._get_rarest_piece(peer_id).next_request()
         return block
-    
+
     def block_received(self, peer_id, piece_index, block_offset,data):
         """
         This method must be called when a block has successfully been retrieved
@@ -365,14 +363,14 @@ class PieceManager:
         """
         logging.debug('Received block %s for piece %s from peer %s:',
                       block_offset, piece_index, peer_id)
-        
+
         # Remove from pending requests
         for index, request in enumerate(self.pending_blocks):
             if request.block.piece == piece_index and \
             request.block.offset == block_offset:
                 del self.pending_blocks[index]
                 break
-        
+
         pieces = [p for p in self.ongoing_pieces if p.index == piece_index]
         piece = pieces[0] if pieces else None
         if piece:
@@ -382,8 +380,8 @@ class PieceManager:
                     self._write(piece)
                     self.ongoing_pieces.remove(piece)
                     self.have_pieces.append(piece)
-                    complete = (self.total_pieces- 
-                                len(self.missing_pieces) - 
+                    complete = (self.total_pieces-
+                                len(self.missing_pieces) -
                                 len(self.ongoing_pieces))
                     logging.info(
                         '{complete} / {total} pieces downloaded {per:.3f} %'
@@ -395,7 +393,7 @@ class PieceManager:
                     piece.reset()
             else:
                 logging.warning('Trying to update piece that is not ongoing!')
-    
+
     def _expired_requests(self, peer_id) -> Block:
         """
         Go through previously requested blocks, if any one have been in the
@@ -412,7 +410,7 @@ class PieceManager:
                                  request.block.offset, request.block.piece)
                     # Reset expiration timer
                     request.added = current
-                    return request.block   
+                    return request.block
         return None
     def _next_ongoing(self, peer_id) -> Block:
         """
@@ -426,9 +424,9 @@ class PieceManager:
                 if block:
                     self.pending_blocks.append(
                         PendingRequest(block, int(round(time.time()* 1000))))
-                    return block     
+                    return block
         return None
-    
+
     def _get_rarest_piece(self, peer_id):
         """
         Given the current list of missing pieces, get the
@@ -441,8 +439,8 @@ class PieceManager:
                 continue
             for p in self.peers:
                 if self.peers[p][p.index]:
-                    piece_count[piece] += 1 
-        
+                    piece_count[piece] += 1
+
         rarest_piece = min(piece_count, key=lambda p: piece_count[p])
         self.missing_pieces.remove(rarest_piece)
         self.ongoing_pieces.append(rarest_piece)
@@ -465,8 +463,8 @@ class PieceManager:
                 # The missing pieces does not have any previously requested
                 # blocks (then it is ongoing)
                 return piece.next_request()
-        return None 
-    
+        return None
+
     def _write(self,piece):
         """
         Write the given piece to disk
@@ -474,14 +472,3 @@ class PieceManager:
         pos = piece.index * self.torrent.piece_length
         os.lseek(self.fd, pos, os.SEEK_SET)
         os.write(self.fd, piece.data)
-
-
-
-
-
-
-
-
-
-
-
