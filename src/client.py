@@ -300,6 +300,9 @@ class PieceManager:
 
     @property
     def bytes_uploaded(self) -> int:
+        """
+        To be implemented later.
+        """
         # TODO Add support for sending data
         return 0
 
@@ -384,10 +387,9 @@ class PieceManager:
                                 len(self.missing_pieces) -
                                 len(self.ongoing_pieces))
                     logging.info(
-                        '{complete} / {total} pieces downloaded {per:.3f} %'
-                        .format(complete=complete,
-                                total=self.total_pieces,
-                                per=(complete/self.total_pieces)*100))
+                        '%d / %d pieces downloaded %.3f %%',
+                        complete, self.total_pieces, (complete/self.total_pieces)*100
+                    )
                 else:
                     logging.info('Discarding corrupt piece %s', piece.index)
                     piece.reset()
@@ -398,7 +400,7 @@ class PieceManager:
         """
         Go through previously requested blocks, if any one have been in the
         requested state for longer than `MAX_PENDING_TIME` return the block to
-        be re-requested.
+        be re-requested. 
 
         If no pending blocks exist, None is returned
         """
@@ -437,8 +439,8 @@ class PieceManager:
         for piece in self.missing_pieces:
             if not self.peers[peer_id][piece.index]:
                 continue
-            for p in self.peers:
-                if self.peers[p][p.index]:
+            for p, bitfield in self.peers.items():
+                if bitfield[p.index]:
                     piece_count[piece] += 1
 
         rarest_piece = min(piece_count, key=lambda p: piece_count[p])
