@@ -111,9 +111,10 @@ class Tracker:
                       first: bool = None,
                       uploaded: int = 0,
                       downloaded: int = 0):
+        """Connects to the tracker and announces the client's status."""
         if self.http_client is None:
             self.http_client = aiohttp.ClientSession()
-        params = {
+        params = { 
             'info_hash': self.torrent.info_hash,
             'peer_id': self.peer_id,
             'uploaded': uploaded,
@@ -127,8 +128,10 @@ class Tracker:
         logging.info('Connecting to tracker at: %s', url)
 
         async with self.http_client.get(url) as response:
-            if not response.status == 200:
-                raise ConnectionError('Unable to connect to tracker')
+            if response.status != 200:
+                body = await response.text()
+                logging.error('Tracker returned status %s: %s', response.status, body)
+                raise ConnectionError(f'Unable to connect to tracker: HTTP {response.status}')
             data = await response.read()
             return TrackerResponse(decode(data))
 
