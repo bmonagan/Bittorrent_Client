@@ -67,7 +67,7 @@ class PeerConnection:
                         if 'choked' in self.my_state:
                             self.my_state.remove('choked')
                     elif type(message) is Have:
-                        self.piece_manager.update_peer(self.rmeote_id,
+                        self.piece_manager.update_peer(self.remote_id,
                                                        message.index)
                     elif type(message) is KeepAlive:
                         pass
@@ -130,12 +130,12 @@ class PeerConnection:
         if block:
             message = Request(block.piece, block.offset, block.length).encode()
 
-            logging.debug('Requesting block {block} for piece {piece} '
-                          'of {length} bytes from peer {peer}'.format(
-                              piece=block.piece,
-                              block=block.offset,
-                              length=block.length,
-                              peer=self.remote_id))
+            logging.debug('Requesting block %s for piece %s '
+                          'of %s bytes from peer %s',
+                          block.offset,
+                          block.piece,
+                          block.length,
+                          self.remote_id)
             
             self.writer.write(message)
             await self.writer.drain()
@@ -315,8 +315,7 @@ class Handshake(PeerMessage):
         Decodes the given BitTorrent message into a handshake message, if not
         a valid message, None is returned.
         """
-        logging.debug('Decoding Handshake of Length: {length}'.format(
-            length = len(data)))
+        logging.debug('Decoding Handshake of Length: %s', len(data))
         if len(data) < (49 + 19):
             return None
         parts = struct.unpack('>B19s8x20s20s', data)
@@ -360,8 +359,8 @@ class BitField(PeerMessage):
     @classmethod
     def decode(cls, data:bytes):
         message_length = struct.unpack('>I', data[:4])[0]
-        logging.debug('Decoding BitField of length: {length}'.format(
-            length = message_length))
+        logging.debug('Decoding BitField of length: %s',
+            message_length)
         
         parts = struct.unpack('>Ib' + str(message_length - 1) + 's', data)
         return cls(parts[2])
@@ -442,8 +441,7 @@ class Have(PeerMessage):
     
     @classmethod
     def decode(cls, data:bytes):
-        logging.debug('Decoding Have of length: {length}'.format(
-            length = len(data)))
+        logging.debug('Decoding Have of length: %s', len(data))
         index = struct.unpack('>IbI', data)[2]
         return cls(index)
 
@@ -483,8 +481,7 @@ class Request(PeerMessage):
         
         @classmethod
         def decode(cls, data:bytes):
-            logging.debug('Decoding Have of length: {length}'.format(
-            length = len(data)))
+            logging.debug('Decoding Have of length: %s', len(data))
         index = struct.unpack('>IbI', data)[2]
         return cls(index)
 
@@ -527,8 +524,7 @@ class Piece(PeerMessage):
                            self.block)
     @classmethod
     def decode(cls,data: bytes):
-        logging.debug('Decoding Piece of length: {length}'.format(
-            length=len(data)))
+        logging.debug('Decoding Piece of length: %s', len(data))
         length = struct.unpack('>I',data[:4])[0]
         parts = struct.unpack('>IbII' + str(length - Piece.length) + "s",
                               data[:length+4])
@@ -561,8 +557,7 @@ class Cancel(PeerMessage):
     
     @classmethod 
     def decode(cls,data: bytes):
-        logging.debug('Decoding Cancel of length: {length}'.format(
-            length=len(data)))
+        logging.debug('Decoding Cancel of length: %s', len(data))
         parts = struct.unpack('IbIII',data)
         return cls(parts[2], parts[3], parts[4])
     
