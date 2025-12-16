@@ -132,13 +132,42 @@ class Tracker:
 
         logging.info('Connecting to tracker at: %s', url)
 
-        async with self.http_client.get(url) as response:
-            if response.status != 200:
-                body = await response.text()
-                logging.error('Tracker returned status %s: %s', response.status, body)
-                raise ConnectionError(f'Unable to connect to tracker: HTTP {response.status}')
-            data = await response.read()
-            return TrackerResponse(decode(data))
+        logging.debug('Tracker request URL: %s', url)
+
+        try:
+            async with self.http_client.get(url) as response:
+                # Log response status and headers for debugging
+                logging.debug('Tracker response status: %s', response.status)
+                logging.debug('Tracker response headers: %s', dict(response.headers))
+
+                data = await response.read()
+
+                if response.status != 200:
+                    # Try to decode body for readable logs
+                    try:
+                        body_text = data.decode('utf-8', errors='replace')
+                    except Exception:
+                        body_text = repr(data)
+
+                    logging.error('Tracker returned status %s. Body: %s', response.status, body_text)
+                    # Close session to avoid unclosed client session warnings
+                    await self.http_client.close()
+                    self.http_client = None
+                    raise ConnectionError(f'Unable to connect to tracker: HTTP {response.status}')
+
+                # Successful response
+                logging.debug('Tracker returned %d bytes', len(data))
+                return TrackerResponse(decode(data))
+        except Exception:
+            logging.exception('Exception while connecting to tracker')
+            # Ensure session is closed on unexpected errors
+            if self.http_client is not None:
+                try:
+                    await self.http_client.close()
+                except Exception:
+                    logging.debug('Error closing HTTP client session', exc_info=True)
+                self.http_client = None
+            raise
 
     async def close(self):
         if self.http_client:
