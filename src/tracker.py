@@ -17,7 +17,7 @@ import logging
 import random
 import socket
 from struct import unpack
-from urllib.parse import urlencode
+from urllib.parse import urlencode, quote, quote_from_bytes
 
 # Third-party imports
 import aiohttp
@@ -114,17 +114,22 @@ class Tracker:
         """Connects to the tracker and announces the client's status."""
         if self.http_client is None:
             self.http_client = aiohttp.ClientSession()
-        params = { 
-            'info_hash': self.torrent.info_hash,
-            'peer_id': self.peer_id,
+        info_hash_q = quote_from_bytes(self.torrent.info_hash)          # percent-encode raw bytes
+        peer_id_q = quote(self.peer_id.encode('utf-8'))                 # percent-encode peer id
+
+        other_params = {
             'uploaded': uploaded,
             'downloaded': downloaded,
             'left': self.torrent.total_size - downloaded,
             'compact': 1
         }
         if first:
-            params['event'] = 'started'
-        url = self.torrent.announce + '?' + urlencode(params)
+            other_params['event'] = 'started'
+
+        # Build query manually so info_hash/peer_id are encoded correctly
+        query = f"info_hash={info_hash_q}&peer_id={peer_id_q}&" + urlencode(other_params)
+        url = f"{self.torrent.announce}?{query}"
+
         logging.info('Connecting to tracker at: %s', url)
 
         async with self.http_client.get(url) as response:
