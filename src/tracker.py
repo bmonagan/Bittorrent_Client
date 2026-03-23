@@ -13,10 +13,12 @@ This module provides classes for interacting with BitTorrent trackers.
 Designed for use in a BitTorrent client implementation.
 """
 # Standard library imports
+from contextlib import suppress
 import logging
 import random
 import socket
 from struct import unpack
+from typing import Any, cast
 from urllib.parse import urlencode, quote, quote_from_bytes
 
 # Third-party imports
@@ -44,8 +46,8 @@ class TrackerResponse:
         incomplete (int): Number of leechers.
         peers (list): List of (ip, port) tuples for each peer.
     """
-    def __init__(self, repsonse: dict):
-        self.response = repsonse
+    def __init__(self, response: dict[bytes, Any]):
+        self.response = response
     @property
     def failure(self):
         # b'' means that it is a bytes literal, meaning it contains raw byte data.
@@ -149,11 +151,8 @@ class Tracker:
                 data = await response.read()
 
                 if response.status != 200:
-                    # Try to decode body for readable logs
-                    try:
-                        body_text = data.decode('utf-8', errors='replace')
-                    except Exception:
-                        body_text = repr(data)
+                    # Decode body for readable logs.
+                    body_text = data.decode('utf-8', errors='replace')
 
                     logging.error('Tracker returned status %s. Body: %s', response.status, body_text)
                     # Close session to avoid unclosed client session warnings
@@ -163,15 +162,13 @@ class Tracker:
 
                 # Successful response
                 logging.debug('Tracker returned %d bytes', len(data))
-                return TrackerResponse(decode(data))
-        except Exception as exc:
+                return TrackerResponse(cast(dict[bytes, Any], decode(data)))
+        except (aiohttp.ClientError, OSError, TimeoutError) as exc:
             logging.error('Exception while connecting to tracker: %s', exc)
             # Ensure session is closed on unexpected errors
             if self.http_client is not None:
-                try:
+                with suppress(aiohttp.ClientError, OSError, RuntimeError):
                     await self.http_client.close()
-                except Exception:
-                    logging.debug('Error closing HTTP client session', exc_info=True)
                 self.http_client = None
             raise ConnectionError(f'Unable to connect to tracker: {exc}') from exc
 
