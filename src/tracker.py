@@ -108,10 +108,16 @@ class Tracker:
         self.http_client = None  # Don't create session here
 
     async def connect(self,
-                      first: bool = None,
+                      first: bool | None = None,
                       uploaded: int = 0,
                       downloaded: int = 0):
         """Connects to the tracker and announces the client's status."""
+        announce_url = self.torrent.announce
+        if announce_url.startswith('udp://'):
+            raise NotImplementedError('UDP tracker support is not implemented yet.')
+        if not (announce_url.startswith('http://') or announce_url.startswith('https://')):
+            raise ValueError(f'Unsupported tracker URL scheme in announce URL: {announce_url}')
+
         if self.http_client is None:
             self.http_client = aiohttp.ClientSession()
         info_hash_q = quote_from_bytes(self.torrent.info_hash)          # percent-encode raw bytes
@@ -128,7 +134,7 @@ class Tracker:
 
         # Build query manually so info_hash/peer_id are encoded correctly
         query = f"info_hash={info_hash_q}&peer_id={peer_id_q}&" + urlencode(other_params)
-        url = f"{self.torrent.announce}?{query}"
+        url = f"{announce_url}?{query}"
 
         logging.info('Connecting to tracker at: %s', url)
 
