@@ -164,8 +164,8 @@ class Tracker:
                 # Successful response
                 logging.debug('Tracker returned %d bytes', len(data))
                 return TrackerResponse(decode(data))
-        except Exception:
-            logging.exception('Exception while connecting to tracker')
+        except Exception as exc:
+            logging.error('Exception while connecting to tracker: %s', exc)
             # Ensure session is closed on unexpected errors
             if self.http_client is not None:
                 try:
@@ -173,7 +173,7 @@ class Tracker:
                 except Exception:
                     logging.debug('Error closing HTTP client session', exc_info=True)
                 self.http_client = None
-            raise
+            raise ConnectionError(f'Unable to connect to tracker: {exc}') from exc
 
     async def close(self):
         if self.http_client:
