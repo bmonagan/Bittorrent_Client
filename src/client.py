@@ -269,9 +269,25 @@ class PieceManager:
         self.max_pending_time = 300 * 1000 # 5 minutes
         self.missing_pieces = self._initiate_pieces()
         self.total_pieces = len(torrent.pieces)
-        # Will create a file if it doses not exist already using
-        # the bitwise OR operator
-        self.fd = os.open(self.torrent.output_file, os.O_RDWR | os.O_CREAT)
+        # File segments are tuples of (global_start, global_end, fd)
+        # used when writing pieces that may span multiple output files.
+        self.file_segments = []
+        self._open_output_files()
+
+    def _open_output_files(self):
+        """
+        Open output files and map each file to its global torrent byte range.
+        """
+        offset = 0
+        for torrent_file in self.torrent.files:
+            file_path = torrent_file.name
+            directory = os.path.dirname(file_path)
+            if directory:
+                os.makedirs(directory, exist_ok=True)
+
+            fd = os.open(file_path, os.O_RDWR | os.O_CREAT)
+            self.file_segments.append((offset, offset + torrent_file.length, fd))
+            offset += torrent_file.length
 
     def _initiate_pieces(self) -> list[Piece]:
         """
@@ -311,8 +327,9 @@ class PieceManager:
         """
         Close any resources used by the PieceManager (such as open files)
         """
-        if self.fd:
-            os.close(self.fd)
+        for _, _, fd in self.file_segments:
+            os.close(fd)
+        self.file_segments = []
 
     @property
     def complete(self):
@@ -504,6 +521,20 @@ class PieceManager:
         """
         Write the given piece to disk
         """
-        pos = piece.index * self.torrent.piece_length
-        os.lseek(self.fd, pos, os.SEEK_SET)
-        os.write(self.fd, piece.data)
+        piece_data = piece.data
+        piece_start = piece.index * self.torrent.piece_length
+        piece_end = piece_start + len(piece_data)
+
+        for file_start, file_end, fd in self.file_segments:
+            overlap_start = max(piece_start, file_start)
+            overlap_end = min(piece_end, file_end)
+            if overlap_start >= overlap_end:
+                continue
+
+            data_offset = overlap_start - piece_start
+            chunk_length = overlap_end - overlap_start
+            chunk = piece_data[data_offset:data_offset + chunk_length]
+
+            file_offset = overlap_start - file_start
+            os.lseek(fd, file_offset, os.SEEK_SET)
+            os.write(fd, chunk)
