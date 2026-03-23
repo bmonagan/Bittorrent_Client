@@ -8,6 +8,13 @@ from .client import TorrentClient
 from .tracker import Tracker
 
 
+def _log_torrent_summary(torrent: Torrent):
+    logging.info('Torrent: %s', torrent.output_file)
+    logging.info('Total size: %d bytes', torrent.total_size)
+    logging.info('Pieces: %d (piece length: %d bytes)', len(torrent.pieces), torrent.piece_length)
+    logging.info('Trackers: %d', len(torrent.announce_urls))
+
+
 async def async_main():
     parser = argparse.ArgumentParser()
     parser.add_argument('torrent', help='the .torrent to download')
@@ -39,6 +46,8 @@ async def async_main():
             return 1
         finally:
             await tracker.close()
+
+            _log_torrent_summary(torrent)
 
     client = TorrentClient(torrent)
     task = asyncio.create_task(client.start())
