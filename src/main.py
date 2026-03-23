@@ -47,7 +47,7 @@ async def async_main():
         finally:
             await tracker.close()
 
-            _log_torrent_summary(torrent)
+    _log_torrent_summary(torrent)
 
     client = TorrentClient(torrent)
     task = asyncio.create_task(client.start())
