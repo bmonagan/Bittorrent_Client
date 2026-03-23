@@ -11,12 +11,11 @@ class Torrent:
     Represents a .torrent file and provides access to its metadata.
 
     This class parses the .torrent file, extracts relevant information such as file name,
-    file length, announce URL, piece hashes, and other metadata. It currently supports only
-    single-file torrents. Multi-file torrents will raise a RuntimeError.
+    file length(s), announce URL, piece hashes, and other metadata.
 
     Attributes:
         filename (str): Path to the .torrent file.
-        files (list[TorrentFile]): List of files described by the torrent (single file supported).
+        files (list[TorrentFile]): List of files described by the torrent.
         meta_info (dict): Decoded bencoded metadata from the torrent file.
         info_hash (bytes): SHA-1 hash of the bencoded 'info' dictionary.
     """
@@ -188,7 +187,14 @@ class Torrent:
         return self.meta_info[b'info'][b'name'].decode('utf-8')
 
     def __str__(self):
-        return (f"Filename: {self.meta_info[b'info'][b'name'].decode('utf-8')}\n"
-                f"File length: {self.meta_info[b'info'][b'length']}\n"
-                f"Announce URL: {self.meta_info[b'announce'].decode('utf-8')}\n"
+        announce_raw = self.meta_info.get(b'announce', b'')
+        if isinstance(announce_raw, bytes):
+            announce_url = announce_raw.decode('utf-8', errors='replace')
+        else:
+            announce_url = str(announce_raw)
+
+        return (f"Name: {self.meta_info[b'info'][b'name'].decode('utf-8')}\n"
+                f"Files: {len(self.files)}\n"
+                f"Total size: {self.total_size}\n"
+                f"Announce URL: {announce_url}\n"
                 f"Hash: {self.info_hash.hex()}")
