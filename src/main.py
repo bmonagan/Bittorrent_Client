@@ -49,7 +49,12 @@ async def async_main():
 
     _log_torrent_summary(torrent)
 
-    client = TorrentClient(torrent)
+    try:
+        client = TorrentClient(torrent)
+    except (RuntimeError, OSError, ValueError) as exc:
+        logging.error(str(exc))
+        return 1
+
     task = asyncio.create_task(client.start())
 
     def signal_handler(*_):
