@@ -172,6 +172,7 @@ class Tracker:
     async def close(self):
         if self.http_client:
             await self.http_client.close()
+            self.http_client = None
 
     def raise_for_error(self, tracker_response):
         pass

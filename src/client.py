@@ -42,6 +42,7 @@ class TorrentClient:
         # request, as well as the logic to persist received pieces to disk.
         self.piece_manager = PieceManager(torrent)
         self.abort = False
+        self._closed = False
 
     async def start(self):
         """
@@ -63,30 +64,32 @@ class TorrentClient:
         # Default interval between announce calls
         interval = 30*60
 
-        while True:
-            if self.piece_manager.complete:
-                logging.info('Torrent fully downloaded!')
-                break
-            if self.abort:
-                logging.info('Aborting download...')
-                break
+        try:
+            while True:
+                if self.piece_manager.complete:
+                    logging.info('Torrent fully downloaded!')
+                    break
+                if self.abort:
+                    logging.info('Aborting download...')
+                    break
 
-            current = time.time()
-            if (not previous) or (previous + interval < current):
-                response = await self.tracker.connect(
-                    first=previous if previous else False,
-                    uploaded=self.piece_manager.bytes_uploaded,
-                    downloaded=self.piece_manager.bytes_downloaded)
-                if response:
-                    previous = current
-                    interval = response.interval
-                    self._empty_queue()
-                    for peer in response.peers:
-                        self.available_peers.put_nowait(peer)
+                current = time.time()
+                if (not previous) or (previous + interval < current):
+                    response = await self.tracker.connect(
+                        first=previous if previous else False,
+                        uploaded=self.piece_manager.bytes_uploaded,
+                        downloaded=self.piece_manager.bytes_downloaded)
+                    if response:
+                        previous = current
+                        interval = response.interval
+                        self._empty_queue()
+                        for peer in response.peers:
+                            self.available_peers.put_nowait(peer)
 
-            else:
-                await asyncio.sleep(5)
-        self.stop()
+                else:
+                    await asyncio.sleep(5)
+        finally:
+            await self.close()
     def _empty_queue(self):
         while not self.available_peers.empty():
             self.available_peers.get_nowait()
@@ -98,8 +101,18 @@ class TorrentClient:
         self.abort = True
         for peer in self.peers:
             peer.stop()
+
+    async def close(self):
+        """
+        Close network and file resources owned by this client.
+        """
+        if self._closed:
+            return
+
+        self.stop()
         self.piece_manager.close()
-        self.tracker.close()
+        await self.tracker.close()
+        self._closed = True
 
     def _on_block_retrieved(self, peer_id, piece_index, block_offset, data):
         """
