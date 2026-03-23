@@ -18,7 +18,7 @@ class Torrent:
         filename (str): Path to the .torrent file.
         files (list[TorrentFile]): List of files described by the torrent (single file supported).
         meta_info (dict): Decoded bencoded metadata from the torrent file.
-        info_hash (bytes): SHA-256 hash of the bencoded 'info' dictionary.
+        info_hash (bytes): SHA-1 hash of the bencoded 'info' dictionary.
     """
     def __init__(self,filename):
         self.filename = filename
@@ -29,7 +29,8 @@ class Torrent:
             meta_info = f.read()
             self.meta_info = cast(dict[bytes, Any], decode(meta_info))
             info = encode(self.meta_info[b'info'])
-            self.info_hash = hashlib.sha256(info).digest()
+            # BitTorrent v1 info_hash is SHA-1 over the bencoded info dict.
+            self.info_hash = hashlib.sha1(info).digest()
             self._identify_files()
 
     def _identify_files(self):
