@@ -76,7 +76,7 @@ class TorrentClient:
                 current = time.time()
                 if (not previous) or (previous + interval < current):
                     response = await self.tracker.connect(
-                        first=previous if previous else False,
+                        first=previous is None,
                         uploaded=self.piece_manager.bytes_uploaded,
                         downloaded=self.piece_manager.bytes_downloaded)
                     if response:

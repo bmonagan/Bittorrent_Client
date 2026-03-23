@@ -126,6 +126,7 @@ class Tracker:
         peer_id_q = quote(self.peer_id.encode('utf-8'))                 # percent-encode peer id
 
         other_params = {
+            'port': 6889,
             'uploaded': uploaded,
             'downloaded': downloaded,
             'left': self.torrent.total_size - downloaded,
