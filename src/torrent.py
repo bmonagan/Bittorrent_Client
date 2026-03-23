@@ -97,11 +97,11 @@ class Torrent:
                     self.meta_info[b'info'][b'length']))
 
     @property
-    def announce(self) -> str:
+    def announce_urls(self) -> list[str]:
         """
-        Returns an announce URL sorted by protocol preference.
+        Returns announce URLs sorted by protocol preference.
 
-        HTTP(S) trackers are preferred. If none are present, fallback to UDP.
+        HTTP(S) trackers are listed first, then UDP trackers.
         """
         http_urls = []
         udp_urls = []
@@ -127,11 +127,17 @@ class Torrent:
                 _bucket_url(raw_url)
 
         _bucket_url(self.meta_info.get(b'announce'))
-        if http_urls:
-            return http_urls[0]
-        if udp_urls:
-            return udp_urls[0]
+        urls = http_urls + udp_urls
+        if urls:
+            return urls
         raise RuntimeError("No valid announce URL found in torrent.")
+
+    @property
+    def announce(self) -> str:
+        """
+        Returns the preferred announce URL.
+        """
+        return self.announce_urls[0]
 
     @property
     def multi_file(self) -> bool:

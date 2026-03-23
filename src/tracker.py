@@ -114,14 +114,7 @@ class Tracker:
                       uploaded: int = 0,
                       downloaded: int = 0):
         """Connects to the tracker and announces the client's status."""
-        announce_url = self.torrent.announce
-        if announce_url.startswith('udp://'):
-            raise NotImplementedError('UDP tracker support is not implemented yet.')
-        if not (announce_url.startswith('http://') or announce_url.startswith('https://')):
-            raise ValueError(f'Unsupported tracker URL scheme in announce URL: {announce_url}')
-
-        if self.http_client is None:
-            self.http_client = aiohttp.ClientSession()
+        tracker_errors = []
         info_hash_q = quote_from_bytes(self.torrent.info_hash)          # percent-encode raw bytes
         peer_id_q = quote(self.peer_id.encode('utf-8'))                 # percent-encode peer id
 
@@ -137,41 +130,60 @@ class Tracker:
 
         # Build query manually so info_hash/peer_id are encoded correctly
         query = f"info_hash={info_hash_q}&peer_id={peer_id_q}&" + urlencode(other_params)
-        url = f"{announce_url}?{query}"
 
-        logging.info('Connecting to tracker at: %s', url)
+        for announce_url in self.torrent.announce_urls:
+            if announce_url.startswith('udp://'):
+                tracker_errors.append(f'{announce_url}: UDP tracker support is not implemented yet')
+                continue
+            if not (announce_url.startswith('http://') or announce_url.startswith('https://')):
+                tracker_errors.append(f'{announce_url}: unsupported tracker URL scheme')
+                continue
 
-        logging.debug('Tracker request URL: %s', url)
+            if self.http_client is None:
+                self.http_client = aiohttp.ClientSession()
 
-        try:
-            async with self.http_client.get(url) as response:
-                # Log response status and headers for debugging
-                logging.debug('Tracker response status: %s', response.status)
-                logging.debug('Tracker response headers: %s', dict(response.headers))
+            url = f"{announce_url}?{query}"
 
-                data = await response.read()
+            logging.info('Connecting to tracker at: %s', url)
+            logging.debug('Tracker request URL: %s', url)
 
-                if response.status != 200:
-                    # Decode body for readable logs.
-                    body_text = data.decode('utf-8', errors='replace')
+            try:
+                async with self.http_client.get(url) as response:
+                    # Log response status and headers for debugging
+                    logging.debug('Tracker response status: %s', response.status)
+                    logging.debug('Tracker response headers: %s', dict(response.headers))
 
-                    logging.error('Tracker returned status %s. Body: %s', response.status, body_text)
-                    # Close session to avoid unclosed client session warnings
-                    await self.http_client.close()
-                    self.http_client = None
-                    raise ConnectionError(f'Unable to connect to tracker: HTTP {response.status}')
+                    data = await response.read()
 
-                # Successful response
-                logging.debug('Tracker returned %d bytes', len(data))
-                return TrackerResponse(cast(dict[bytes, Any], decode(data)))
-        except (aiohttp.ClientError, OSError, TimeoutError) as exc:
-            logging.error('Exception while connecting to tracker: %s', exc)
-            # Ensure session is closed on unexpected errors
-            if self.http_client is not None:
-                with suppress(aiohttp.ClientError, OSError, RuntimeError):
-                    await self.http_client.close()
-                self.http_client = None
-            raise ConnectionError(f'Unable to connect to tracker: {exc}') from exc
+                    if response.status != 200:
+                        body_text = data.decode('utf-8', errors='replace')
+                        reason = f'HTTP {response.status} {body_text}'
+                        logging.error('Tracker returned status %s. Body: %s', response.status, body_text)
+                        tracker_errors.append(f'{announce_url}: {reason}')
+                        continue
+
+                    decoded_response = cast(dict[bytes, Any], decode(data))
+                    if b'failure reason' in decoded_response:
+                        reason = decoded_response[b'failure reason'].decode('utf-8', errors='replace')
+                        tracker_errors.append(f'{announce_url}: {reason}')
+                        logging.warning('Tracker announce rejected by %s: %s', announce_url, reason)
+                        continue
+
+                    logging.debug('Tracker returned %d bytes', len(data))
+                    return TrackerResponse(decoded_response)
+            except (aiohttp.ClientError, OSError, TimeoutError) as exc:
+                logging.error('Exception while connecting to tracker %s: %s', announce_url, exc)
+                tracker_errors.append(f'{announce_url}: {exc}')
+                continue
+
+        # Ensure session is closed if no tracker succeeded.
+        if self.http_client is not None:
+            with suppress(aiohttp.ClientError, OSError, RuntimeError):
+                await self.http_client.close()
+            self.http_client = None
+
+        details = '; '.join(tracker_errors) if tracker_errors else 'No trackers available'
+        raise ConnectionError(f'Unable to connect to tracker: {details}')
 
     async def close(self):
         if self.http_client:
