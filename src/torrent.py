@@ -127,7 +127,13 @@ class Torrent:
                 _bucket_url(raw_url)
 
         _bucket_url(self.meta_info.get(b'announce'))
-        urls = http_urls + udp_urls
+        urls = []
+        seen = set()
+        for url in http_urls + udp_urls:
+            if url in seen:
+                continue
+            seen.add(url)
+            urls.append(url)
         if urls:
             return urls
         raise RuntimeError("No valid announce URL found in torrent.")
