@@ -283,7 +283,16 @@ class PieceManager:
             file_path = torrent_file.name
             directory = os.path.dirname(file_path)
             if directory:
+                if os.path.isfile(directory):
+                    raise RuntimeError(
+                        f'Cannot create output directory {directory!r}: a file exists at that path.'
+                    )
                 os.makedirs(directory, exist_ok=True)
+
+            if os.path.isdir(file_path):
+                raise RuntimeError(
+                    f'Cannot open output file {file_path!r}: a directory exists at that path.'
+                )
 
             fd = os.open(file_path, os.O_RDWR | os.O_CREAT)
             self.file_segments.append((offset, offset + torrent_file.length, fd))
