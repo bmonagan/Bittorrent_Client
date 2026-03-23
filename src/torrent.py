@@ -1,7 +1,7 @@
 import hashlib
 from collections import namedtuple
 from typing import Any, cast
-from bencodepy import encode,decode
+from bencodepy import decode
 
 #Reprsents the files within the torrent
 TorrentFile = namedtuple('TorrentFile',['name','length'])
@@ -28,10 +28,56 @@ class Torrent:
         with open(self.filename,'rb') as f:
             meta_info = f.read()
             self.meta_info = cast(dict[bytes, Any], decode(meta_info))
-            info = encode(self.meta_info[b'info'])
-            # BitTorrent v1 info_hash is SHA-1 over the bencoded info dict.
-            self.info_hash = hashlib.sha1(info).digest()
+            raw_info = self._extract_raw_info_dict(meta_info)
+            # BitTorrent v1 info_hash is SHA-1 over the exact raw bencoded info dict bytes.
+            self.info_hash = hashlib.sha1(raw_info).digest()
             self._identify_files()
+
+    @staticmethod
+    def _read_bencoded_value_end(data: bytes, start: int) -> int:
+        token = data[start:start + 1]
+        if token == b'i':
+            return data.index(b'e', start) + 1
+        if token == b'l':
+            idx = start + 1
+            while data[idx:idx + 1] != b'e':
+                idx = Torrent._read_bencoded_value_end(data, idx)
+            return idx + 1
+        if token == b'd':
+            idx = start + 1
+            while data[idx:idx + 1] != b'e':
+                key_end = data.index(b':', idx)
+                key_length = int(data[idx:key_end])
+                idx = key_end + 1 + key_length
+                idx = Torrent._read_bencoded_value_end(data, idx)
+            return idx + 1
+        if b'0' <= token <= b'9':
+            length_end = data.index(b':', start)
+            length = int(data[start:length_end])
+            return length_end + 1 + length
+        raise ValueError('Invalid bencoded token while parsing info dictionary')
+
+    @classmethod
+    def _extract_raw_info_dict(cls, meta_info: bytes) -> bytes:
+        if not meta_info.startswith(b'd'):
+            raise ValueError('Invalid torrent file: top-level bencode is not a dictionary')
+
+        idx = 1
+        while meta_info[idx:idx + 1] != b'e':
+            key_end = meta_info.index(b':', idx)
+            key_length = int(meta_info[idx:key_end])
+            key_start = key_end + 1
+            key = meta_info[key_start:key_start + key_length]
+
+            value_start = key_start + key_length
+            value_end = cls._read_bencoded_value_end(meta_info, value_start)
+
+            if key == b'info':
+                return meta_info[value_start:value_end]
+
+            idx = value_end
+
+        raise ValueError('Invalid torrent file: missing info dictionary')
 
     def _identify_files(self):
         """
