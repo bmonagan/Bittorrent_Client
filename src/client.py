@@ -63,6 +63,8 @@ class TorrentClient:
         previous = None
         # Default interval between announce calls
         interval = 30*60
+        last_progress_at = time.time()
+        last_downloaded = 0
 
         try:
             while True:
@@ -74,6 +76,24 @@ class TorrentClient:
                     break
 
                 current = time.time()
+                if current - last_progress_at >= 15:
+                    downloaded = self.piece_manager.bytes_downloaded
+                    delta_bytes = max(0, downloaded - last_downloaded)
+                    delta_time = max(0.001, current - last_progress_at)
+                    speed_kib_s = (delta_bytes / delta_time) / 1024
+                    total_size = max(1, self.tracker.torrent.total_size)
+                    progress_pct = (downloaded / total_size) * 100
+                    logging.info(
+                        'Progress: %.2f%% (%d/%d bytes), speed %.2f KiB/s, queued peers=%d',
+                        progress_pct,
+                        downloaded,
+                        total_size,
+                        speed_kib_s,
+                        self.available_peers.qsize()
+                    )
+                    last_progress_at = current
+                    last_downloaded = downloaded
+
                 if (not previous) or (previous + interval < current):
                     response = await self.tracker.connect(
                         first=previous is None,
