@@ -1,5 +1,6 @@
 import hashlib
 from collections import namedtuple
+from typing import Any, cast
 from bencodepy import encode,decode
 
 #Reprsents the files within the torrent
@@ -22,10 +23,11 @@ class Torrent:
     def __init__(self,filename):
         self.filename = filename
         self.files = []
+        self.meta_info: dict[bytes, Any] = {}
 
         with open(self.filename,'rb') as f:
             meta_info = f.read()
-            self.meta_info = decode(meta_info)
+            self.meta_info = cast(dict[bytes, Any], decode(meta_info))
             info = encode(self.meta_info[b'info'])
             self.info_hash = hashlib.sha256(info).digest()
             self._identify_files()
@@ -108,7 +110,7 @@ class Torrent:
         return self.files[0].length
 
     @property
-    def pieces(self) -> list[str]:
+    def pieces(self) -> list[bytes]:
         """
         Breaks the string meta_info pieces into 20 byte long slices. 
         20 bytes being 20 characters in a string representation
