@@ -2,7 +2,6 @@ import argparse
 import asyncio
 import signal
 import logging
-from concurrent.futures import CancelledError
 
 from .torrent import Torrent
 from .client import TorrentClient
@@ -28,9 +27,16 @@ async def async_main():
 
     try:
         await task
-    except CancelledError:
+        return 0
+    except asyncio.CancelledError:
         logging.warning('Event loop was canceled.')
+        return 1
+    except (RuntimeError, ConnectionError) as exc:
+        logging.error(str(exc))
+        return 1
+    finally:
+        await client.close()
 
 
 if __name__ == "__main__":
-    asyncio.run(async_main())
+    raise SystemExit(asyncio.run(async_main()))
