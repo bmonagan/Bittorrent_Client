@@ -50,19 +50,39 @@ class Torrent:
     @property
     def announce(self) -> str:
         """
-        Announces URL to tracker 
+        Returns an announce URL sorted by protocol preference.
+
+        HTTP(S) trackers are preferred. If none are present, fallback to UDP.
         """
-        # TODO skip UDP for now and in the future add in UDP support.
+        http_urls = []
+        udp_urls = []
+
+        def _bucket_url(raw_url):
+            if not raw_url:
+                return
+            if isinstance(raw_url, bytes):
+                url = raw_url.decode('utf-8', errors='ignore')
+            else:
+                url = str(raw_url)
+
+            if url.startswith('http://') or url.startswith('https://'):
+                http_urls.append(url)
+            elif url.startswith('udp://'):
+                udp_urls.append(url)
+
         announce_list = self.meta_info.get(b'announce-list', [])
-        for announce_url in announce_list:
-            url = announce_url[0]
-            if url.startswith(b'http://') or url.startswith(b'https://'):
-                return url.decode('utf-8')
-        # Fallback to single announce if announce-list is missing
-        url = self.meta_info.get(b'announce')
-        if url and (url.startswith(b'http://') or url.startswith(b'https://')):
-            return url.decode('utf-8')
-        raise ValueError('Only HTTP(S) trackers are supported. Find a torrent with HTTP(S) in announce list.')
+        for tier in announce_list:
+            if not tier:
+                continue
+            for raw_url in tier:
+                _bucket_url(raw_url)
+
+        _bucket_url(self.meta_info.get(b'announce'))
+        if udp_urls:
+            return udp_urls[0]
+        if http_urls:
+            return http_urls[0]
+        raise RuntimeError("No valid announce URL found in torrent.")
 
     @property
     def multi_file(self) -> bool:
