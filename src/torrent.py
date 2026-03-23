@@ -78,10 +78,10 @@ class Torrent:
                 _bucket_url(raw_url)
 
         _bucket_url(self.meta_info.get(b'announce'))
-        if udp_urls:
-            return udp_urls[0]
         if http_urls:
             return http_urls[0]
+        if udp_urls:
+            return udp_urls[0]
         raise RuntimeError("No valid announce URL found in torrent.")
 
     @property
