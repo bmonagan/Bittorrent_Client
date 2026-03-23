@@ -3,6 +3,7 @@ import logging
 import math
 import os
 import time
+from pathlib import Path
 
 from asyncio import Queue
 from collections import namedtuple, defaultdict
@@ -272,7 +273,44 @@ class PieceManager:
         # File segments are tuples of (global_start, global_end, fd)
         # used when writing pieces that may span multiple output files.
         self.file_segments = []
+        self.path_redirects = {}
         self._open_output_files()
+
+    def _find_existing_file_parent(self, file_path: str) -> str | None:
+        path_obj = Path(file_path)
+        parts = path_obj.parts
+        for depth in range(1, len(parts)):
+            candidate = Path(*parts[:depth])
+            if candidate.is_file():
+                return str(candidate)
+        return None
+
+    def _allocate_redirect_directory(self, blocked_dir: str) -> str:
+        if blocked_dir in self.path_redirects:
+            return self.path_redirects[blocked_dir]
+
+        index = 0
+        while True:
+            suffix = '_files' if index == 0 else f'_files_{index}'
+            candidate = f'{blocked_dir}{suffix}'
+            if not os.path.exists(candidate) or os.path.isdir(candidate):
+                self.path_redirects[blocked_dir] = candidate
+                logging.warning(
+                    'Output path %r is a file; writing multi-file torrent data under %r instead.',
+                    blocked_dir,
+                    candidate
+                )
+                return candidate
+            index += 1
+
+    def _resolve_output_path(self, file_path: str) -> str:
+        blocked_parent = self._find_existing_file_parent(file_path)
+        if not blocked_parent:
+            return file_path
+
+        redirect_root = self._allocate_redirect_directory(blocked_parent)
+        relative_path = os.path.relpath(file_path, blocked_parent)
+        return os.path.join(redirect_root, relative_path)
 
     def _open_output_files(self):
         """
@@ -280,7 +318,7 @@ class PieceManager:
         """
         offset = 0
         for torrent_file in self.torrent.files:
-            file_path = torrent_file.name
+            file_path = self._resolve_output_path(torrent_file.name)
             directory = os.path.dirname(file_path)
             if directory:
                 if os.path.isfile(directory):
