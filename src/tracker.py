@@ -19,7 +19,7 @@ import random
 import socket
 from struct import unpack
 from typing import Any, cast
-from urllib.parse import urlencode, quote, quote_from_bytes
+from urllib.parse import urlencode, quote_from_bytes
 
 # Third-party imports
 import aiohttp
@@ -115,8 +115,9 @@ class Tracker:
                       downloaded: int = 0):
         """Connects to the tracker and announces the client's status."""
         tracker_errors = []
-        info_hash_q = quote_from_bytes(self.torrent.info_hash)          # percent-encode raw bytes
-        peer_id_q = quote(self.peer_id.encode('utf-8'))                 # percent-encode peer id
+        # Encode every byte (safe='') so tracker compares exact 20-byte values.
+        info_hash_q = quote_from_bytes(self.torrent.info_hash, safe='')
+        peer_id_q = quote_from_bytes(self.peer_id.encode('utf-8'), safe='')
 
         other_params = {
             'port': 6889,
