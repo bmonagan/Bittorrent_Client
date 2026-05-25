@@ -39,6 +39,27 @@ This BitTorrent client implements the core functionality needed to:
 - 🎨 **GUI**: Graphical user interface for easier usage
 - 📝 **Improved Code Quality**: Type hints, docstrings, and code cleanup
 
+## Quick Start
+
+Get up and running in just a few commands:
+
+```bash
+# Clone and navigate to the project
+cd Bittorrent_Client
+
+# Create and activate virtual environment
+python -m venv .venv
+.venv\Scripts\Activate.ps1  # On Windows
+
+# Install the project
+pip install -e .
+
+# Download a torrent (sample files in data/)
+python -m src.main data/mint.torrent
+```
+
+For more advanced usage options, see the [Usage](#usage) section below.
+
 ## Installation
 
 ### Prerequisites
