@@ -2,6 +2,18 @@
 
 A Python implementation of a BitTorrent client that downloads files from peer-to-peer networks using the BitTorrent protocol. This project serves as an educational exploration of how BitTorrent works under the hood.
 
+## Motivation
+
+Existing BitTorrent clients like Transmission, qBittorrent, and Deluge are production-ready but often come with heavy dependencies, complex architectures, and a steep learning curve for understanding the underlying protocol mechanics. Python bindings to libraries like libtorrent are powerful but obscure the implementation details behind C++ abstractions.
+
+The goal of this project is to provide a clean, from-scratch implementation of a BitTorrent client in pure Python that makes the protocol transparent and understandable. Rather than building a fully-featured production client, this implementation prioritizes:
+
+- **Educational Value**: Clear code that demonstrates core BitTorrent concepts
+- **Simplicity**: Minimal dependencies and straightforward abstractions
+- **Transparency**: Understand exactly how peers are discovered, how pieces are requested, and how downloads are coordinated
+- **Async-First Design**: Showcase modern Python async/await patterns for concurrent I/O
+- **Modular Architecture**: Clearly separated concerns (bencoding, tracker communication, peer protocol)
+
 ## Overview
 
 This BitTorrent client implements the core functionality needed to:
